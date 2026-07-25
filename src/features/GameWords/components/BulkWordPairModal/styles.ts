@@ -1,0 +1,47 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(67, 39, 34, 0.35)',
+    justifyContent: 'center',
+    paddingHorizontal: 22,
+  },
+  card: {
+    backgroundColor: '#fff8f1',
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: '#452a25',
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 9,
+  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  kicker: { color: '#d77c70', fontWeight: '800', letterSpacing: 1.3, fontSize: 10 },
+  title: { color: '#51342f', fontSize: 25, fontWeight: '800', letterSpacing: -0.7, marginTop: 3 },
+  close: { color: '#9b796e', fontSize: 29 },
+  description: { color: '#8b6a60', fontSize: 14, lineHeight: 20, marginTop: 14, marginBottom: 14 },
+  input: {
+    minHeight: 150,
+    borderRadius: 14,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ecd9ce',
+    padding: 14,
+    color: '#51342f',
+    fontSize: 15,
+    marginTop: 9,
+  },
+  saveButton: {
+    height: 57,
+    borderRadius: 18,
+    backgroundColor: '#51342f',
+    marginTop: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  saveButtonDisabled: { backgroundColor: '#cdb8ae' },
+  saveText: { color: '#fff', fontWeight: '800', fontSize: 16 },
+  saveArrow: { position: 'absolute', right: 19, color: '#f3bd9f', fontSize: 22 },
+});

@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Local implementation notes
+/src/features/GameSession/useGameSession/provider/GameSessionProvider.docs.html

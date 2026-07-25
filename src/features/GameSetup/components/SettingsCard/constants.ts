@@ -1,0 +1,1 @@
+export const SETTINGS_CARD_ACCESSIBILITY_SUFFIX = 'setting';

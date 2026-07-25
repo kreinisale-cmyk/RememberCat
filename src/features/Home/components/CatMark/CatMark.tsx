@@ -72,6 +72,7 @@ export function CatMark() {
       true,
     );
   }, [offset]);
+
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.value }] }));
   return (
     <Animated.View style={[styles.wrap, animatedStyle]}>

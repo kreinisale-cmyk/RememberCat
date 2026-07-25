@@ -1,6 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
+import { useGameSession } from '@/features/GameSession/useGameSession/useGameSession';
 import { FocusMode, MatchMode, WordPair } from '@/features/GameSession/types';
-import { getGameSession } from '@/lib/game-session';
 import { Redirect, router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
@@ -20,7 +20,7 @@ import { MatchFeedback, SelectedPair } from './types';
 import { formatClock, makeBoard, shuffle } from './utils';
 
 export function Game() {
-  const session = getGameSession();
+  const { session } = useGameSession();
   const [board, setBoard] = useState<WordPair[]>(() =>
     session ? makeBoard(session.pairs, BOARD_SIZE) : [],
   );
@@ -46,10 +46,12 @@ export function Game() {
     if (!session || !selection.wordId || !selection.translationId) return;
     const correct = selection.wordId === selection.translationId;
     setFeedback(correct ? MatchFeedback.Correct : MatchFeedback.Incorrect);
+
     const timeout = setTimeout(
       () => {
         if (correct) {
           setScore((value) => value + 1);
+
           setBoard((current) => {
             const nextPair = {
               ...session.pairs[cursor % session.pairs.length],
@@ -58,9 +60,11 @@ export function Game() {
             const next = current.map((pair) => (pair.id === selection.wordId ? nextPair : pair));
             return session.matchMode === MatchMode.Hard ? shuffle(next) : next;
           });
+
           setCursor((value) => value + 1);
         }
         setSelection({ wordId: null, translationId: null });
+
         setFeedback(MatchFeedback.None);
       },
       correct ? MATCH_FEEDBACK_DURATION_MS : INCORRECT_FEEDBACK_DURATION_MS,

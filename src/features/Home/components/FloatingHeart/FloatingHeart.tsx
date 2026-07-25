@@ -29,6 +29,7 @@ export function FloatingHeart({ delayMs, size, style }: FloatingHeartProps) {
       true,
     );
   }, [delayMs, offset]);
+
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: offset.value }] }));
   return (
     <Animated.Text style={[styles.heart, { fontSize: size }, style, animatedStyle]}>

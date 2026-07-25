@@ -19,3 +19,10 @@ export type GameSession = {
   focusMode: FocusMode;
   matchMode: MatchMode;
 };
+
+export type GameSessionContextValue = {
+  draft: GameSession;
+  session: GameSession | null;
+  updateDraft: (update: Partial<GameSession>) => void;
+  startGameSession: () => void;
+};

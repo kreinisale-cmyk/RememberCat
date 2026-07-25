@@ -1,46 +1,73 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  ScrollView,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { getSetupDraft, updateSetupDraft } from '@/lib/game-session';
+import { useGameSession } from '@/features/GameSession/useGameSession/useGameSession';
 
-import { WORD_PAIR_LIMIT } from './constants';
+import { BulkWordPairModal } from './components/BulkWordPairModal/BulkWordPairModal';
+import { EmptyDeck } from './components/EmptyDeck/EmptyDeck';
+import { WordListActions } from './components/WordListActions';
+import { WordPairGrid } from './components/WordPairGrid';
+import { WordPairModal } from './components/WordPairModal/WordPairModal';
+import { GAME_ROUTE, WORD_PAIR_LIMIT } from './constants';
+import { useBulkAddWordPairs } from './hooks/useBulkAddWordPairs';
+import { useImportWordPairs } from './hooks/useImportWordPairs';
 import { styles } from './styles';
 import { WordPairField } from './types';
-import { createWordPair, removeWordPair, updateWordPair } from './utils';
+import { createWordPair, hasCompleteWordPair, removeWordPair, updateWordPair } from './utils';
 
 export function GameWords() {
-  const [pairs, setPairs] = useState(() => getSetupDraft().pairs);
+  const { draft, startGameSession, updateDraft } = useGameSession();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [word, setWord] = useState('');
   const [translation, setTranslation] = useState('');
+  const [importMessage, setImportMessage] = useState('');
+  const [isBulkModalVisible, setIsBulkModalVisible] = useState(false);
+  const [bulkWords, setBulkWords] = useState('');
+
+  const pairs = draft.pairs;
   const isDeckFull = pairs.length >= WORD_PAIR_LIMIT;
+  const isDeckReady = isDeckFull && pairs.every(hasCompleteWordPair);
   const canSavePair = Boolean(word.trim() && translation.trim());
-  const setDraftPairs = (nextPairs: typeof pairs) => {
-    setPairs(nextPairs);
-    updateSetupDraft({ pairs: nextPairs });
-  };
-  const savePair = () => {
-    if (canSavePair && !isDeckFull) {
-      setDraftPairs([createWordPair(word, translation), ...pairs]);
-      setWord('');
-      setTranslation('');
-      setIsModalVisible(false);
-    }
-  };
-  const editPair = (id: string, field: WordPairField, value: string) =>
+  const importWordPairs = useImportWordPairs({ pairs, setDraftPairs, setImportMessage });
+  const addBulkWordPairs = useBulkAddWordPairs({ pairs, setDraftPairs, setImportMessage });
+
+  function setDraftPairs(nextPairs: typeof pairs) {
+    updateDraft({ pairs: nextPairs });
+  }
+
+  function savePair() {
+    if (!canSavePair || isDeckFull) return;
+
+    setDraftPairs([createWordPair(word, translation), ...pairs]);
+    setWord('');
+    setTranslation('');
+    setIsModalVisible(false);
+  }
+
+  function editPair(id: string, field: WordPairField, value: string) {
     setDraftPairs(updateWordPair(pairs, id, field, value));
-  const deletePair = (id: string) => setDraftPairs(removeWordPair(pairs, id));
+  }
+
+  function deletePair(id: string) {
+    setDraftPairs(removeWordPair(pairs, id));
+  }
+
+  function saveBulkWords() {
+    if (!addBulkWordPairs(bulkWords)) return;
+
+    setBulkWords('');
+    setIsBulkModalVisible(false);
+  }
+
+  function startGame() {
+    if (!isDeckReady) return;
+
+    startGameSession();
+    router.push(GAME_ROUTE);
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -77,43 +104,18 @@ export function GameWords() {
           {pairs.length === 0 ? (
             <EmptyDeck />
           ) : (
-            pairs.map((pair, index) => (
-              <View key={pair.id} style={styles.pairCard}>
-                <View style={styles.pairHeader}>
-                  <ThemedText style={styles.pairNumber}>WORD PAIR {index + 1}</ThemedText>
-                  <Pressable onPress={() => deletePair(pair.id)} hitSlop={10}>
-                    <ThemedText style={styles.remove}>Remove</ThemedText>
-                  </Pressable>
-                </View>
-                <TextInput
-                  value={pair.word}
-                  onChangeText={(value) => editPair(pair.id, 'word', value)}
-                  placeholder="Word in English"
-                  placeholderTextColor="#bea89d"
-                  style={styles.input}
-                  returnKeyType="next"
-                />
-                <TextInput
-                  value={pair.translation}
-                  onChangeText={(value) => editPair(pair.id, 'translation', value)}
-                  placeholder="Translation"
-                  placeholderTextColor="#bea89d"
-                  style={styles.input}
-                />
-              </View>
-            ))
+            <WordPairGrid pairs={pairs} onEdit={editPair} onRemove={deletePair} />
           )}
         </ScrollView>
-        <Pressable
-          onPress={() => setIsModalVisible(true)}
-          disabled={isDeckFull}
-          style={[styles.addButton, isDeckFull && styles.addButtonDisabled]}
-        >
-          <ThemedText style={styles.addPlus}>+</ThemedText>
-          <ThemedText style={styles.addText}>
-            {isDeckFull ? `All ${WORD_PAIR_LIMIT} words added` : 'Add words'}
-          </ThemedText>
-        </Pressable>
+        <WordListActions
+          isDeckFull={isDeckFull}
+          isDeckReady={isDeckReady}
+          importMessage={importMessage}
+          onAdd={() => setIsModalVisible(true)}
+          onImport={importWordPairs}
+          onPaste={() => setIsBulkModalVisible(true)}
+          onStart={startGame}
+        />
         <WordPairModal
           visible={isModalVisible}
           word={word}
@@ -124,85 +126,14 @@ export function GameWords() {
           onTranslationChange={setTranslation}
           onSave={savePair}
         />
+        <BulkWordPairModal
+          visible={isBulkModalVisible}
+          contents={bulkWords}
+          onChange={setBulkWords}
+          onClose={() => setIsBulkModalVisible(false)}
+          onSave={saveBulkWords}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-}
-
-function EmptyDeck() {
-  return (
-    <View style={styles.empty}>
-      <ThemedText style={styles.emptyIcon}>✦</ThemedText>
-      <ThemedText style={styles.emptyTitle}>Your deck is empty</ThemedText>
-      <ThemedText style={styles.emptyCopy}>Start with a word you’d love to remember.</ThemedText>
-    </View>
-  );
-}
-function WordPairModal({
-  visible,
-  word,
-  translation,
-  canSave,
-  onClose,
-  onWordChange,
-  onTranslationChange,
-  onSave,
-}: {
-  visible: boolean;
-  word: string;
-  translation: string;
-  canSave: boolean;
-  onClose: () => void;
-  onWordChange: (value: string) => void;
-  onTranslationChange: (value: string) => void;
-  onSave: () => void;
-}) {
-  return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.modalBackdrop}
-      >
-        <View style={styles.modalCard}>
-          <View style={styles.modalHeader}>
-            <View>
-              <ThemedText style={styles.kicker}>NEW WORD PAIR</ThemedText>
-              <ThemedText style={styles.modalTitle}>Add a word</ThemedText>
-            </View>
-            <Pressable onPress={onClose} hitSlop={12}>
-              <ThemedText style={styles.close}>×</ThemedText>
-            </Pressable>
-          </View>
-          <ThemedText style={styles.modalCopy}>
-            Add the word and its translation. It will appear first in your deck.
-          </ThemedText>
-          <TextInput
-            autoFocus
-            value={word}
-            onChangeText={onWordChange}
-            placeholder="Word in English"
-            placeholderTextColor="#bea89d"
-            style={styles.modalInput}
-            returnKeyType="next"
-          />
-          <TextInput
-            value={translation}
-            onChangeText={onTranslationChange}
-            placeholder="Translation"
-            placeholderTextColor="#bea89d"
-            style={styles.modalInput}
-            onSubmitEditing={onSave}
-          />
-          <Pressable
-            onPress={onSave}
-            disabled={!canSave}
-            style={[styles.saveButton, !canSave && styles.saveButtonDisabled]}
-          >
-            <ThemedText style={styles.saveText}>Add to deck</ThemedText>
-            <ThemedText style={styles.saveArrow}>→</ThemedText>
-          </Pressable>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
   );
 }
