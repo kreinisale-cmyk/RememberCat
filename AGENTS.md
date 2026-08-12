@@ -2,6 +2,13 @@
 
 Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
 
+# Required Validation
+
+- After every code change, run TypeScript, Prettier, ESLint, and a real Expo Android bundle check before reporting the work as complete.
+- Run `npx tsc --noEmit`, `npx prettier --check .`, `npx eslint src`, and `npx expo export --platform android --output-dir .expo/build-check --clear`.
+- Treat any validation or Metro bundling failure as a blocker. Static checks alone are not sufficient.
+- When native code, native dependencies, or native configuration changes, also run the applicable native build.
+
 # Application Architecture
 
 - Keep Expo Router files in `src/app/` as thin route adapters only. Route files must only import and export a screen component.
@@ -20,5 +27,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 - Keep public props, state shapes, and domain types in `types.ts`.
 - Use enums for application modes and finite state values. Do not use plain string unions for these modes.
 - Prefer named functions and typed props over inline logic when that improves readability. Keep route components and JSX focused on rendering and event wiring.
+- Use explicit, responsibility-revealing names for variables and functions. Avoid vague or generic names that require reading the implementation to understand their purpose.
+- When a function has multiple conditional branches, use explicit `if` / `else if` / `else` statements instead of chained or nested ternary expressions. Reserve ternaries for simple two-way choices.
 - Do not leave commented-out code in the repository. Delete obsolete code once its replacement is active.
 - Leave one blank line between `useEffect` / `useFocusEffect` calls, local functions, and event-handler declarations so component files remain easy to scan.

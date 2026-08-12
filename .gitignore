@@ -33,6 +33,9 @@ yarn-error.*
 # local env files
 .env*.local
 
+# Temporary local JDKs
+.codex-jdk*/
+
 # typescript
 *.tsbuildinfo
 

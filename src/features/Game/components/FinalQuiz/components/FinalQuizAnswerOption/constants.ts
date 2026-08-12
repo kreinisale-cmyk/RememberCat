@@ -1,0 +1,3 @@
+export const ANSWER_FEEDBACK_SCALE = 1.06;
+export const ANSWER_SHAKE_DISTANCE = 6;
+export const ANSWER_SHAKE_DURATION_MS = 65;

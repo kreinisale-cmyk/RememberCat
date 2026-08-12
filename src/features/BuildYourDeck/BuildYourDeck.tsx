@@ -18,7 +18,7 @@ import { styles } from './styles';
 import { WordPairField } from './types';
 import { createWordPair, hasCompleteWordPair, removeWordPair, updateWordPair } from './utils';
 
-export function GameWords() {
+export function BuildYourDeck() {
   const { draft, startGameSession, updateDraft } = useGameSession();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [word, setWord] = useState('');

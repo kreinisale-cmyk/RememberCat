@@ -1,0 +1,2 @@
+export const SUCCESS_ANIMATION_RISE = 24;
+export const SUCCESS_ANIMATION_SCALE = 0.65;
