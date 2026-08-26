@@ -1,9 +1,11 @@
-import { WordPair } from '@/features/GameSession/types';
+import { FocusMode, GameSession, MatchMode, WordPair } from '@/features/GameSession/types';
 
 import {
   FinalQuizAnswerChoice,
   GameBoardPair,
   GameStage,
+  MatchCelebrationAnimation,
+  ReinforcementAnswerChoice,
   SelectedBoardPair,
   TimedRoundPhase,
   WordPairLearningStatistics,
@@ -11,12 +13,18 @@ import {
 } from './types';
 import {
   BOARD_SIZE,
+  CHALLENGE_STAGE_MATCH_GOAL,
+  MATCH_CELEBRATION_ANIMATIONS,
+  MAIN_ROUND_EASY_HINT,
+  MAIN_ROUND_HARD_HINT,
   MAIN_ROUND_PRACTICE_KICKER,
   MAIN_ROUND_TIMED_KICKER_PREFIX,
+  PRACTICE_ROUND_EASY_HINT,
+  PRACTICE_ROUND_HARD_HINT,
   TIMED_ROUND_FIRST_BOARD_SIZE,
-  TIMED_ROUND_PHASE_DURATION_SECONDS,
   TIMED_ROUND_SECOND_BOARD_SIZE,
   TIMED_ROUND_THIRD_BOARD_SIZE,
+  STANDARD_CHALLENGE_STAGE_SECONDS,
 } from './constants';
 
 type RandomNumberGenerator = () => number;
@@ -44,6 +52,26 @@ export function shuffle<T>(items: T[], generateRandomNumber: RandomNumberGenerat
   }
 
   return shuffledItems;
+}
+
+export function selectNextMatchCelebrationAnimation(
+  previousAnimation: MatchCelebrationAnimation | null,
+  generateRandomNumber: RandomNumberGenerator = Math.random,
+) {
+  let animationCandidates = MATCH_CELEBRATION_ANIMATIONS;
+
+  if (previousAnimation) {
+    animationCandidates = MATCH_CELEBRATION_ANIMATIONS.filter(
+      (animation) => animation !== previousAnimation,
+    );
+  }
+
+  const randomAnimationIndex = Math.min(
+    Math.floor(generateRandomNumber() * animationCandidates.length),
+    animationCandidates.length - 1,
+  );
+
+  return animationCandidates[randomAnimationIndex] ?? MatchCelebrationAnimation.Burst;
 }
 
 export function shuffleGameBoardAfterReplacement(
@@ -80,30 +108,42 @@ export function formatClock(seconds: number) {
   return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-export function createMainRoundKicker(isTimedMainRound: boolean, secondsRemaining: number) {
+export function createMainRoundKicker(
+  isTimedMainRound: boolean,
+  secondsRemaining: number,
+  timedRoundPhase: TimedRoundPhase,
+) {
+  const stageLabel = `STAGE ${timedRoundPhase} OF 3`;
+
   if (isTimedMainRound) {
-    return `${MAIN_ROUND_TIMED_KICKER_PREFIX} ${formatClock(secondsRemaining)}`;
+    return `${stageLabel}  |  ${MAIN_ROUND_TIMED_KICKER_PREFIX} ${formatClock(secondsRemaining)}`;
   }
 
-  return MAIN_ROUND_PRACTICE_KICKER;
+  return `${stageLabel}  |  ${MAIN_ROUND_PRACTICE_KICKER}`;
 }
 
 export function createRoundProgressLabel(completedPairCount: number, targetPairCount: number) {
   return `${completedPairCount}/${targetPairCount}`;
 }
 
-export function createTimedRoundPhaseLabel(timedRoundPhase: TimedRoundPhase) {
-  return `${timedRoundPhase}/3`;
+export function createMainRoundHint(matchMode: MatchMode) {
+  if (matchMode === MatchMode.Hard) {
+    return MAIN_ROUND_HARD_HINT;
+  }
+
+  return MAIN_ROUND_EASY_HINT;
 }
 
-export function getTimedRoundPhase(secondsRemaining: number) {
-  if (secondsRemaining > TIMED_ROUND_PHASE_DURATION_SECONDS * 2) {
-    return TimedRoundPhase.FourCards;
-  } else if (secondsRemaining > TIMED_ROUND_PHASE_DURATION_SECONDS) {
-    return TimedRoundPhase.FiveCards;
-  } else {
-    return TimedRoundPhase.SixCards;
+export function createPracticeRoundHint(matchMode: MatchMode) {
+  if (matchMode === MatchMode.Hard) {
+    return PRACTICE_ROUND_HARD_HINT;
   }
+
+  return PRACTICE_ROUND_EASY_HINT;
+}
+
+export function createTimedRoundPhaseLabel(timedRoundPhase: TimedRoundPhase) {
+  return `${timedRoundPhase}/3`;
 }
 
 export function getTimedRoundBoardSize(timedRoundPhase: TimedRoundPhase) {
@@ -114,6 +154,136 @@ export function getTimedRoundBoardSize(timedRoundPhase: TimedRoundPhase) {
   } else {
     return TIMED_ROUND_THIRD_BOARD_SIZE;
   }
+}
+
+export function getFinalBatchCountdown(
+  completedMatchCount: number,
+  timedRoundPhase: TimedRoundPhase,
+) {
+  const remainingMatchCount = CHALLENGE_STAGE_MATCH_GOAL - completedMatchCount;
+  const boardSize = getTimedRoundBoardSize(timedRoundPhase);
+
+  if (remainingMatchCount > 0 && remainingMatchCount <= boardSize) {
+    return remainingMatchCount;
+  }
+
+  return null;
+}
+
+export function getNextTimedRoundPhase(timedRoundPhase: TimedRoundPhase) {
+  if (timedRoundPhase === TimedRoundPhase.FourCards) {
+    return TimedRoundPhase.FiveCards;
+  } else if (timedRoundPhase === TimedRoundPhase.FiveCards) {
+    return TimedRoundPhase.SixCards;
+  } else {
+    return null;
+  }
+}
+
+export function isChallengeTimed(session: GameSession | null) {
+  return session?.focusMode === FocusMode.Timed;
+}
+
+export function getChallengeStageDurationSeconds() {
+  return STANDARD_CHALLENGE_STAGE_SECONDS;
+}
+
+export function shouldShuffleWordColumn(matchMode: MatchMode | undefined) {
+  return matchMode === MatchMode.Hard;
+}
+
+export function arrangeWordBoardAfterReplacement(
+  gameBoard: GameBoardPair[],
+  replacementBoardPairId: string,
+  replacedBoardPairIndex: number,
+  matchMode: MatchMode | undefined,
+) {
+  if (shouldShuffleWordColumn(matchMode)) {
+    return shuffleGameBoardAfterReplacement(
+      gameBoard,
+      replacementBoardPairId,
+      replacedBoardPairIndex,
+    );
+  }
+
+  return gameBoard;
+}
+
+export function arrangeRemainingWordBoard(
+  gameBoard: GameBoardPair[],
+  matchMode: MatchMode | undefined,
+) {
+  if (shouldShuffleWordColumn(matchMode)) {
+    return shuffle(gameBoard);
+  }
+
+  return gameBoard;
+}
+
+export function createReinforcementAnswerChoices(
+  targetWordPair: WordPair,
+  wordPairs: WordPair[],
+  choiceCount: number,
+  generateRandomNumber: RandomNumberGenerator = Math.random,
+) {
+  const distractorChoices = shuffle(
+    wordPairs.filter((wordPair) => wordPair.id !== targetWordPair.id),
+    generateRandomNumber,
+  )
+    .slice(0, Math.max(choiceCount - 1, 0))
+    .map<ReinforcementAnswerChoice>((wordPair) => ({
+      wordPairId: wordPair.id,
+      translation: wordPair.translation,
+    }));
+  const correctChoice: ReinforcementAnswerChoice = {
+    wordPairId: targetWordPair.id,
+    translation: targetWordPair.translation,
+  };
+
+  return shuffle([correctChoice, ...distractorChoices], generateRandomNumber);
+}
+
+export function reshuffleReinforcementAnswerChoices(
+  answerChoices: ReinforcementAnswerChoice[],
+  correctWordPairId: string,
+  generateRandomNumber: RandomNumberGenerator = Math.random,
+) {
+  const previousCorrectChoiceIndex = answerChoices.findIndex(
+    (answerChoice) => answerChoice.wordPairId === correctWordPairId,
+  );
+  const shuffledAnswerChoices = shuffle(answerChoices, generateRandomNumber);
+  const nextCorrectChoiceIndex = shuffledAnswerChoices.findIndex(
+    (answerChoice) => answerChoice.wordPairId === correctWordPairId,
+  );
+
+  if (
+    shuffledAnswerChoices.length <= 1 ||
+    previousCorrectChoiceIndex < 0 ||
+    nextCorrectChoiceIndex !== previousCorrectChoiceIndex
+  ) {
+    return shuffledAnswerChoices;
+  }
+
+  const swapChoiceIndex =
+    nextCorrectChoiceIndex === shuffledAnswerChoices.length - 1 ? 0 : nextCorrectChoiceIndex + 1;
+  const correctChoice = shuffledAnswerChoices[nextCorrectChoiceIndex];
+
+  shuffledAnswerChoices[nextCorrectChoiceIndex] = shuffledAnswerChoices[swapChoiceIndex];
+  shuffledAnswerChoices[swapChoiceIndex] = correctChoice;
+
+  return shuffledAnswerChoices;
+}
+
+export function advanceReinforcementRepetition(
+  currentCorrectRepetitionCount: number,
+  repetitionGoal: number,
+) {
+  const nextCorrectRepetitionCount = Math.min(currentCorrectRepetitionCount + 1, repetitionGoal);
+
+  return {
+    nextCorrectRepetitionCount,
+    isWordComplete: nextCorrectRepetitionCount >= repetitionGoal,
+  };
 }
 
 export function getInitialMainRoundBoardSize(isTimedMainRound: boolean) {
@@ -177,6 +347,38 @@ export function createInitialGameBoard(
     .map((wordPair, sequenceIndex) =>
       createGameBoardPair(wordPair, boardPairIdPrefix, sequenceIndex),
     );
+}
+
+export function createSequentialGameBoard(
+  wordPairs: WordPair[],
+  boardSize: number,
+  boardPairIdPrefix: string,
+  startingSequenceIndex: number,
+) {
+  if (wordPairs.length === 0) {
+    return [];
+  }
+
+  return Array.from({ length: boardSize }, (_, boardPairOffset) => {
+    const sequenceIndex = startingSequenceIndex + boardPairOffset;
+    const wordPair = wordPairs[sequenceIndex % wordPairs.length];
+
+    return createGameBoardPair(wordPair, boardPairIdPrefix, sequenceIndex);
+  });
+}
+
+export function replaceGameBoardPair(
+  gameBoard: GameBoardPair[],
+  matchedBoardPairId: string,
+  replacementBoardPair: GameBoardPair,
+) {
+  return gameBoard.map((gameBoardPair) => {
+    if (gameBoardPair.boardPairId === matchedBoardPairId) {
+      return replacementBoardPair;
+    }
+
+    return gameBoardPair;
+  });
 }
 
 export function createInitialMismatchStatistics(wordPairs: WordPair[]) {

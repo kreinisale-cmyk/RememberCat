@@ -2,17 +2,19 @@ import { useCallback } from 'react';
 
 import { WordPair } from '@/features/GameSession/types';
 
-import { WORD_PAIR_FILE_TYPES, WORD_PAIR_LIMIT } from '../constants';
+import { WORD_PAIR_FILE_TYPES } from '../constants';
 import { parseWordPairFile } from '../utils';
 
 type UseImportWordPairsOptions = {
   pairs: WordPair[];
+  wordPairLimit: number;
   setDraftPairs: (pairs: WordPair[]) => void;
   setImportMessage: (message: string) => void;
 };
 
 export function useImportWordPairs({
   pairs,
+  wordPairLimit,
   setDraftPairs,
   setImportMessage,
 }: UseImportWordPairsOptions) {
@@ -29,7 +31,7 @@ export function useImportWordPairs({
 
       const file = new File(result.assets[0].uri);
       const importedPairs = parseWordPairFile(await file.text());
-      const availableSlots = WORD_PAIR_LIMIT - pairs.length;
+      const availableSlots = wordPairLimit - pairs.length;
       const pairsToAdd = importedPairs.slice(0, availableSlots);
 
       setDraftPairs([...pairsToAdd, ...pairs]);
@@ -41,5 +43,5 @@ export function useImportWordPairs({
     } catch {
       setImportMessage('Rebuild the Android app once to enable local file importing.');
     }
-  }, [pairs, setDraftPairs, setImportMessage]);
+  }, [pairs, setDraftPairs, setImportMessage, wordPairLimit]);
 }

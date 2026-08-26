@@ -4,29 +4,30 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useGameSession } from '@/features/GameSession/useGameSession/useGameSession';
 
-import { FinalQuizTransition } from './components/FinalQuizTransition/FinalQuizTransition';
+import { ChallengeFailed } from './components/ChallengeFailed/ChallengeFailed';
+import { EasyReinforcement } from './components/EasyReinforcement/EasyReinforcement';
 import { FinalQuiz } from './components/FinalQuiz/FinalQuiz';
+import { FinalQuizTransition } from './components/FinalQuizTransition/FinalQuizTransition';
 import { LearningStatistics } from './components/LearningStatistics/LearningStatistics';
 import { MatchingBoard } from './components/MatchingBoard/MatchingBoard';
 import { PracticeTransition } from './components/PracticeTransition/PracticeTransition';
+import { PreparationSession } from './components/PreparationSession/PreparationSession';
 import { TimedRoundTransition } from './components/TimedRoundTransition/TimedRoundTransition';
 import {
+  CHALLENGE_STAGE_MATCH_GOAL,
   GAME_SETUP_ROUTE,
-  MAIN_ROUND_HINT,
   MAIN_ROUND_TITLE,
-  MATCH_GOAL,
-  PRACTICE_ROUND_HINT,
   PRACTICE_ROUND_KICKER,
   PRACTICE_ROUND_TITLE,
-  TIMED_ROUND_PROGRESS_MILESTONES,
 } from './constants';
 import { useMatchingGame } from './hooks/useMatchingGame/useMatchingGame';
 import { styles } from './styles';
 import { GameStage } from './types';
 import {
+  createMainRoundHint,
   createMainRoundKicker,
+  createPracticeRoundHint,
   createRoundProgressLabel,
-  createTimedRoundPhaseLabel,
 } from './utils';
 
 export function Game() {
@@ -68,16 +69,72 @@ export function Game() {
   let gameStageContent: ReactNode;
 
   switch (matchingGame.gameStage) {
+    case GameStage.Preparation:
+      if (matchingGame.currentPreparationWordPair) {
+        gameStageContent = (
+          <PreparationSession
+            key={matchingGame.currentPreparationWordPair.id}
+            wordPair={matchingGame.currentPreparationWordPair}
+            currentWordNumber={matchingGame.preparationWordIndex + 1}
+            totalWordCount={matchingGame.preparationWordCount}
+            onAcknowledge={matchingGame.acknowledgePreparationWord}
+            onClose={leaveGame}
+          />
+        );
+      } else {
+        gameStageContent = null;
+      }
+      break;
+
+    case GameStage.EasyReinforcement:
+      if (matchingGame.currentReinforcementWordPair) {
+        gameStageContent = (
+          <EasyReinforcement
+            key={matchingGame.currentReinforcementWordPair.id}
+            wordPair={matchingGame.currentReinforcementWordPair}
+            answerChoices={matchingGame.reinforcementAnswerChoices}
+            currentWordNumber={matchingGame.reinforcementWordIndex + 1}
+            totalWordCount={matchingGame.reinforcementWordCount}
+            correctRepetitionCount={matchingGame.reinforcementCorrectRepetitionCount}
+            repetitionGoal={matchingGame.reinforcementRepetitionGoal}
+            feedback={matchingGame.reinforcementFeedback}
+            selectedAnswerId={matchingGame.selectedReinforcementAnswerId}
+            isCelebrating={matchingGame.isLearnedWordCelebrationVisible}
+            onClose={leaveGame}
+            onSelectAnswer={matchingGame.selectReinforcementAnswer}
+          />
+        );
+      } else {
+        gameStageContent = null;
+      }
+      break;
+
+    case GameStage.ChallengeFailed:
+      gameStageContent = (
+        <ChallengeFailed
+          phase={matchingGame.timedRoundPhase}
+          completedMatchCount={matchingGame.mainRoundScore}
+          targetMatchCount={CHALLENGE_STAGE_MATCH_GOAL}
+          onRetry={matchingGame.retryChallengeStage}
+          onClose={returnToGameSetup}
+        />
+      );
+      break;
+
     case GameStage.DifficultWordsPractice:
       gameStageContent = (
         <MatchingBoard
           gameBoard={matchingGame.gameBoard}
           translationBoardPairs={matchingGame.translationBoardPairs}
+          completedWordBoardPairIds={matchingGame.completedWordBoardPairIds}
+          completedTranslationBoardPairIds={matchingGame.completedTranslationBoardPairIds}
           selectedBoardPair={matchingGame.selectedBoardPair}
           matchFeedback={matchingGame.matchFeedback}
+          matchCelebrationAnimation={matchingGame.matchCelebrationAnimation}
+          completionCountdown={null}
           kicker={PRACTICE_ROUND_KICKER}
           title={PRACTICE_ROUND_TITLE}
-          hint={PRACTICE_ROUND_HINT}
+          hint={createPracticeRoundHint(session.matchMode)}
           progress={matchingGame.practiceRoundProgress}
           progressLabel={createRoundProgressLabel(
             matchingGame.completedPracticePairCount,
@@ -89,6 +146,7 @@ export function Game() {
         />
       );
       break;
+
     case GameStage.FinalQuiz:
       if (matchingGame.currentFinalQuizQuestion) {
         gameStageContent = (
@@ -113,6 +171,7 @@ export function Game() {
         );
       }
       break;
+
     case GameStage.LearningStatistics:
       gameStageContent = (
         <LearningStatistics
@@ -122,29 +181,32 @@ export function Game() {
         />
       );
       break;
+
     case GameStage.MainRound:
+
     default:
       gameStageContent = (
         <MatchingBoard
           gameBoard={matchingGame.gameBoard}
           translationBoardPairs={matchingGame.translationBoardPairs}
+          completedWordBoardPairIds={matchingGame.completedWordBoardPairIds}
+          completedTranslationBoardPairIds={matchingGame.completedTranslationBoardPairIds}
           selectedBoardPair={matchingGame.selectedBoardPair}
           matchFeedback={matchingGame.matchFeedback}
+          matchCelebrationAnimation={matchingGame.matchCelebrationAnimation}
+          completionCountdown={matchingGame.matchCompletionCountdown}
           kicker={createMainRoundKicker(
             matchingGame.isTimedMainRound,
             matchingGame.secondsRemaining,
+            matchingGame.timedRoundPhase,
           )}
           title={MAIN_ROUND_TITLE}
-          hint={MAIN_ROUND_HINT}
+          hint={createMainRoundHint(session.matchMode)}
           progress={matchingGame.mainRoundProgress}
-          progressLabel={
-            matchingGame.isTimedMainRound
-              ? createTimedRoundPhaseLabel(matchingGame.timedRoundPhase)
-              : createRoundProgressLabel(matchingGame.mainRoundScore, MATCH_GOAL)
-          }
-          progressMilestones={
-            matchingGame.isTimedMainRound ? TIMED_ROUND_PROGRESS_MILESTONES : undefined
-          }
+          progressLabel={createRoundProgressLabel(
+            matchingGame.mainRoundScore,
+            CHALLENGE_STAGE_MATCH_GOAL,
+          )}
           onClose={leaveGame}
           onSelectWordCard={matchingGame.selectWordCard}
           onSelectTranslationCard={matchingGame.selectTranslationCard}

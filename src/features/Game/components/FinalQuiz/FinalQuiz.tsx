@@ -54,7 +54,7 @@ export function FinalQuiz({
             {questionWordPair.word}
           </ThemedText>
         </View>
-        <View style={styles.answerGrid}>
+        <View style={styles.answerList}>
           {answerChoices.map((answerChoice) => {
             const isSelectedAnswer = selectedAnswerId === answerChoice.wordPairId;
 

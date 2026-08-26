@@ -2,16 +2,15 @@ import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   wrapper: {
-    flexBasis: '48%',
-    flexGrow: 1,
-    height: 72,
+    width: '100%',
+    height: 54,
   },
   button: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
+    borderRadius: 15,
     borderWidth: 1.5,
     borderColor: '#ead8cc',
     backgroundColor: '#fff',

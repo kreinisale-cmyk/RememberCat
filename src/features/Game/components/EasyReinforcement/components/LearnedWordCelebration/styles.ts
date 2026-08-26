@@ -1,0 +1,46 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  backdrop: {
+    ...StyleSheet.absoluteFill,
+    zIndex: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 248, 241, 0.94)',
+    paddingHorizontal: 26,
+  },
+  glow: {
+    position: 'absolute',
+    width: 230,
+    height: 230,
+    borderRadius: 115,
+    backgroundColor: '#ffe2c8',
+  },
+  card: {
+    width: '100%',
+    maxWidth: 360,
+    alignItems: 'center',
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: '#efc8b6',
+    backgroundColor: '#ffffff',
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+    shadowColor: '#7e5147',
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  sparkleRow: { flexDirection: 'row', alignItems: 'center', gap: 22 },
+  sparkle: { color: '#e58f75', fontSize: 24 },
+  cat: { fontSize: 58, lineHeight: 66 },
+  message: {
+    color: '#51342f',
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginTop: 18,
+  },
+});

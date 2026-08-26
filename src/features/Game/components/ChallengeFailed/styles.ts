@@ -1,0 +1,90 @@
+import { StyleSheet } from 'react-native';
+
+export const styles = StyleSheet.create({
+  content: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 26,
+  },
+  iconStage: {
+    width: 180,
+    height: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 90,
+    backgroundColor: '#fce1d6',
+    borderWidth: 5,
+    borderColor: '#efaa92',
+  },
+  icon: {
+    fontSize: 92,
+    lineHeight: 112,
+  },
+  copy: {
+    alignItems: 'center',
+    marginTop: 28,
+  },
+  kicker: {
+    color: '#ca6d5c',
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+  },
+  title: {
+    color: '#50342f',
+    fontSize: 36,
+    lineHeight: 44,
+    fontWeight: '900',
+    marginTop: 7,
+  },
+  stage: {
+    color: '#4f9f8c',
+    fontSize: 15,
+    lineHeight: 21,
+    fontWeight: '900',
+    marginTop: 7,
+  },
+  score: {
+    color: '#7f625a',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '700',
+    marginTop: 5,
+  },
+  message: {
+    color: '#896b62',
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: 'center',
+    marginTop: 14,
+  },
+  retryButton: {
+    width: '100%',
+    maxWidth: 370,
+    minHeight: 58,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: '#4f9f8c',
+    marginTop: 32,
+  },
+  retryText: {
+    color: '#ffffff',
+    fontSize: 17,
+    lineHeight: 23,
+    fontWeight: '900',
+  },
+  exitButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+  exitText: {
+    color: '#9a776c',
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '800',
+  },
+});

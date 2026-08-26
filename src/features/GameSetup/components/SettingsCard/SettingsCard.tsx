@@ -9,7 +9,7 @@ import { getSettingsCardAccessibilityLabel } from './utils';
 export function SettingsCard({ title, detail, children }: SettingsCardProps) {
   return (
     <View style={styles.card} accessibilityLabel={getSettingsCardAccessibilityLabel(title)}>
-      <View>
+      <View style={styles.copy}>
         <ThemedText style={styles.title}>{title}</ThemedText>
         <ThemedText style={styles.detail}>{detail}</ThemedText>
       </View>

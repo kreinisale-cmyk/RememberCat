@@ -1,0 +1,11 @@
+export const PREPARATION_KICKER = 'PREPARE YOUR MEMORY';
+export const PREPARATION_TITLE = 'Meet every word first';
+export const PREPARATION_HINT = 'Take all the time you need. There is no clock here.';
+export const WORD_LABEL = 'WORD';
+export const TRANSLATION_LABEL = 'MEANING';
+export const ACKNOWLEDGE_LABEL = 'Yes, I remember this';
+export const FINAL_ACKNOWLEDGE_LABEL = 'I remember it — start challenge';
+export const PREPARATION_CLOSE_ACCESSIBILITY_LABEL = 'Close preparation';
+export const PREPARATION_ENTRANCE_DISTANCE = 34;
+export const PREPARATION_SPRING_DAMPING = 10;
+export const PREPARATION_SPRING_STIFFNESS = 105;

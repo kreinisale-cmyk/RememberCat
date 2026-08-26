@@ -1,36 +1,69 @@
 import { router } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { FocusMode, MatchMode } from '@/features/GameSession/types';
+import { BuildYourDeckEntryMode } from '@/features/BuildYourDeck/types';
+import { DeckSize, FocusMode, MatchMode } from '@/features/GameSession/types';
 import { useGameSession } from '@/features/GameSession/useGameSession/useGameSession';
-import { hasCompleteWordPairs } from '@/features/GameSession/utils';
 
+import { DeckSizeSelector } from './components/DeckSizeSelector/DeckSizeSelector';
 import { ModeToggle } from './components/ModeToggle/ModeToggle';
 import { SettingsCard } from './components/SettingsCard/SettingsCard';
-import { GAME_SETUP_ROUTE, REQUIRED_WORD_PAIR_COUNT, WORDS_ROUTE } from './constants';
+import { WordListSetupActions } from './components/WordListSetupActions/WordListSetupActions';
+import { GAME_SETUP_ROUTE, WORDS_ROUTE } from './constants';
 import { styles } from './styles';
-import { getFocusModeDescription, getMatchModeDescription } from './utils';
+import {
+  findLatestSavedDeckForSize,
+  getFocusModeDescription,
+  getMatchModeDescription,
+} from './utils';
 
 export function GameSetup() {
-  const { draft, startGameSession, updateDraft } = useGameSession();
+  const {
+    draft,
+    savedDecks,
+    isSavedDeckLibraryLoading,
+    savedDeckLibraryError,
+    startSavedDeckGame,
+    updateDraft,
+  } = useGameSession();
+  const latestSavedDeck = findLatestSavedDeckForSize(savedDecks, draft.deckSize);
 
-  const isReady = hasCompleteWordPairs(draft, REQUIRED_WORD_PAIR_COUNT);
+  function updateDeckSize(deckSize: DeckSize) {
+    updateDraft({ deckSize, pairs: [] });
+  }
 
-  const updateFocusMode = (focusMode: FocusMode) => {
+  function updateFocusMode(focusMode: FocusMode) {
     updateDraft({ focusMode });
-  };
-  const updateMatchMode = (matchMode: MatchMode) => {
-    updateDraft({ matchMode });
-  };
-  const startGame = () => {
-    if (isReady) {
-      startGameSession();
+  }
 
-      router.push(GAME_SETUP_ROUTE);
+  function updateMatchMode(matchMode: MatchMode) {
+    updateDraft({ matchMode });
+  }
+
+  function continuePractice() {
+    if (!latestSavedDeck || !startSavedDeckGame(latestSavedDeck.id)) {
+      return;
     }
-  };
+
+    router.push(GAME_SETUP_ROUTE);
+  }
+
+  function openSavedWordLists() {
+    router.push({
+      pathname: WORDS_ROUTE,
+      params: { mode: BuildYourDeckEntryMode.Library },
+    });
+  }
+
+  function openNewWordList() {
+    updateDraft({ pairs: [] });
+    router.push({
+      pathname: WORDS_ROUTE,
+      params: { mode: BuildYourDeckEntryMode.Create },
+    });
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -43,57 +76,48 @@ export function GameSetup() {
           <ThemedText style={styles.title}>Your practice round</ThemedText>
         </View>
       </View>
-      <ThemedText style={styles.intro}>
-        Choose how you’d like to play, then add the words you want to remember.
-      </ThemedText>
-      <View style={styles.cards}>
-        <SettingsCard title="Focus mode" detail={getFocusModeDescription(draft.focusMode)}>
-          <ModeToggle
-            first={FocusMode.Timed}
-            second={FocusMode.Free}
-            selected={draft.focusMode}
-            onChange={updateFocusMode}
-          />
-        </SettingsCard>
-        <SettingsCard title="Match mode" detail={getMatchModeDescription(draft.matchMode)}>
-          <ModeToggle
-            first={MatchMode.Easy}
-            second={MatchMode.Hard}
-            selected={draft.matchMode}
-            onChange={updateMatchMode}
-          />
-        </SettingsCard>
-        <Pressable onPress={() => router.push(WORDS_ROUTE)} style={[styles.card, styles.wordsCard]}>
-          <View style={styles.wordsIcon}>
-            <ThemedText style={styles.wordsIconText}>✦</ThemedText>
-          </View>
-          <View style={styles.wordsCopy}>
-            <ThemedText style={styles.cardTitle}>Generate words</ThemedText>
-            <ThemedText style={styles.cardDetail}>
-              {draft.pairs.length
-                ? `${draft.pairs.length} of ${REQUIRED_WORD_PAIR_COUNT} word pairs added`
-                : 'Add your own vocabulary'}
-            </ThemedText>
-          </View>
-          <ThemedText style={styles.chevron}>›</ThemedText>
-        </Pressable>
-      </View>
-      <View style={styles.footer}>
-        <ThemedText style={styles.footerHint}>
-          {isReady
-            ? 'Your deck is ready.'
-            : `Add ${REQUIRED_WORD_PAIR_COUNT - draft.pairs.length} more word pairs to play.`}
+      <ScrollView
+        style={styles.body}
+        contentContainerStyle={styles.bodyContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <ThemedText style={styles.intro}>
+          Choose how you’d like to play, then add the words you want to remember.
         </ThemedText>
-        <Pressable
-          accessibilityRole="button"
-          onPress={startGame}
-          disabled={!isReady}
-          style={[styles.startButton, !isReady && styles.startButtonDisabled]}
-        >
-          <ThemedText style={styles.startText}>Start game</ThemedText>
-          <ThemedText style={styles.startArrow}>→</ThemedText>
-        </Pressable>
-      </View>
+        <View style={styles.cards}>
+          <SettingsCard
+            title="Practice size"
+            detail={`${draft.deckSize} words in this practice deck`}
+          >
+            <DeckSizeSelector selectedDeckSize={draft.deckSize} onChange={updateDeckSize} />
+          </SettingsCard>
+          <SettingsCard title="Focus mode" detail={getFocusModeDescription(draft.focusMode)}>
+            <ModeToggle
+              first={FocusMode.Timed}
+              second={FocusMode.Free}
+              selected={draft.focusMode}
+              onChange={updateFocusMode}
+            />
+          </SettingsCard>
+          <SettingsCard title="Match mode" detail={getMatchModeDescription(draft.matchMode)}>
+            <ModeToggle
+              first={MatchMode.Easy}
+              second={MatchMode.Hard}
+              selected={draft.matchMode}
+              onChange={updateMatchMode}
+            />
+          </SettingsCard>
+          <WordListSetupActions
+            deckSize={draft.deckSize}
+            latestSavedDeck={latestSavedDeck}
+            isLoading={isSavedDeckLibraryLoading}
+            errorMessage={savedDeckLibraryError}
+            onAdd={openNewWordList}
+            onContinue={continuePractice}
+            onEdit={openSavedWordLists}
+          />
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

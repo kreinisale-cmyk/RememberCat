@@ -1,7 +1,7 @@
-import { WordPair } from '@/features/GameSession/types';
+import { DeckSize, SavedDeck, WordPair } from '@/features/GameSession/types';
 
 import { INPUT_AUTOMATION_ID_PREFIX, WORD_PAIR_SEPARATOR } from './constants';
-import { WordPairField } from './types';
+import { BuildYourDeckEntryMode, WordPairField } from './types';
 
 export function createWordPair(word: string, translation: string): WordPair {
   return {
@@ -36,4 +36,22 @@ export function removeWordPair(pairs: WordPair[], id: string) {
 
 export function hasCompleteWordPair({ word, translation }: WordPair) {
   return Boolean(word.trim() && translation.trim());
+}
+
+export function filterSavedDecksByDeckSize(savedDecks: SavedDeck[], deckSize: DeckSize) {
+  return savedDecks
+    .filter((savedDeck) => savedDeck.pairCount === deckSize)
+    .sort(
+      (firstSavedDeck, secondSavedDeck) => secondSavedDeck.updatedAt - firstSavedDeck.updatedAt,
+    );
+}
+
+export function parseBuildYourDeckEntryMode(mode: string | string[] | undefined) {
+  const resolvedMode = Array.isArray(mode) ? mode[0] : mode;
+
+  if (resolvedMode === BuildYourDeckEntryMode.Create) {
+    return BuildYourDeckEntryMode.Create;
+  }
+
+  return BuildYourDeckEntryMode.Library;
 }

@@ -17,6 +17,7 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 1,
   },
+  copy: { flex: 1, paddingRight: 10 },
   title: { color: '#563832', fontSize: 16, fontWeight: '800' },
   detail: { color: '#96756a', fontSize: 12, marginTop: 4 },
 });

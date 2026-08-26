@@ -4,6 +4,7 @@ import { ThemedText } from '@/components/themed-text';
 
 import { MatchFeedback } from '../../types';
 import { MatchCard } from '../MatchCard/MatchCard';
+import { MatchCardSide } from '../MatchCard/types';
 import { ProgressTrack } from './components/ProgressTrack/ProgressTrack';
 import { CLOSE_GAME_ACCESSIBILITY_LABEL } from './constants';
 import { styles } from './styles';
@@ -14,7 +15,11 @@ export function MatchingBoard({
   gameBoard,
   translationBoardPairs,
   selectedBoardPair,
+  completedWordBoardPairIds,
+  completedTranslationBoardPairIds,
   matchFeedback,
+  matchCelebrationAnimation,
+  completionCountdown,
   kicker,
   title,
   hint,
@@ -52,13 +57,24 @@ export function MatchingBoard({
             <MatchCard
               key={gameBoardPair.boardPairId}
               label={gameBoardPair.word}
+              side={MatchCardSide.Word}
+              completed={completedWordBoardPairIds.includes(gameBoardPair.boardPairId)}
+              celebrationAnimation={matchCelebrationAnimation}
+              completionCountdown={
+                selectedBoardPair.wordBoardPairId === gameBoardPair.boardPairId
+                  ? completionCountdown
+                  : null
+              }
               selected={selectedBoardPair.wordBoardPairId === gameBoardPair.boardPairId}
               feedback={getSelectedCardFeedback(
                 matchFeedback,
                 gameBoardPair.boardPairId,
                 selectedBoardPair.wordBoardPairId,
               )}
-              disabled={isCardSelectionDisabled}
+              disabled={
+                isCardSelectionDisabled ||
+                completedWordBoardPairIds.includes(gameBoardPair.boardPairId)
+              }
               onPress={() => onSelectWordCard(gameBoardPair.boardPairId)}
             />
           ))}
@@ -68,13 +84,24 @@ export function MatchingBoard({
             <MatchCard
               key={gameBoardPair.boardPairId}
               label={gameBoardPair.translation}
+              side={MatchCardSide.Translation}
+              completed={completedTranslationBoardPairIds.includes(gameBoardPair.boardPairId)}
+              celebrationAnimation={matchCelebrationAnimation}
+              completionCountdown={
+                selectedBoardPair.translationBoardPairId === gameBoardPair.boardPairId
+                  ? completionCountdown
+                  : null
+              }
               selected={selectedBoardPair.translationBoardPairId === gameBoardPair.boardPairId}
               feedback={getSelectedCardFeedback(
                 matchFeedback,
                 gameBoardPair.boardPairId,
                 selectedBoardPair.translationBoardPairId,
               )}
-              disabled={isCardSelectionDisabled}
+              disabled={
+                isCardSelectionDisabled ||
+                completedTranslationBoardPairIds.includes(gameBoardPair.boardPairId)
+              }
               onPress={() => onSelectTranslationCard(gameBoardPair.boardPairId)}
             />
           ))}

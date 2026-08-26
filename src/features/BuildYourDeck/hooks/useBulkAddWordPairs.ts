@@ -2,23 +2,24 @@ import { useCallback } from 'react';
 
 import { WordPair } from '@/features/GameSession/types';
 
-import { WORD_PAIR_LIMIT } from '../constants';
 import { parseWordPairFile } from '../utils';
 
 type UseBulkAddWordPairsOptions = {
   pairs: WordPair[];
+  wordPairLimit: number;
   setDraftPairs: (pairs: WordPair[]) => void;
   setImportMessage: (message: string) => void;
 };
 
 export function useBulkAddWordPairs({
   pairs,
+  wordPairLimit,
   setDraftPairs,
   setImportMessage,
 }: UseBulkAddWordPairsOptions) {
   return useCallback(
     (contents: string) => {
-      const availableSlots = WORD_PAIR_LIMIT - pairs.length;
+      const availableSlots = wordPairLimit - pairs.length;
       const pairsToAdd = parseWordPairFile(contents).slice(0, availableSlots);
 
       if (!pairsToAdd.length) {
@@ -34,6 +35,6 @@ export function useBulkAddWordPairs({
 
       return true;
     },
-    [pairs, setDraftPairs, setImportMessage],
+    [pairs, setDraftPairs, setImportMessage, wordPairLimit],
   );
 }

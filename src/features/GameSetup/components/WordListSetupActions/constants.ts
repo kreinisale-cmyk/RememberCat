@@ -1,0 +1,11 @@
+export const ADD_NEW_WORDS_LABEL = 'Add new words';
+export const ADD_NEW_WORDS_DETAIL_PREFIX = 'Create a new list with';
+export const EDIT_WORD_LIST_LABEL = 'Edit word list';
+export const EDIT_WORD_LIST_DETAIL_PREFIX = 'Latest saved list';
+export const CONTINUE_PRACTICE_LABEL = 'Continue practice';
+export const CONTINUE_PRACTICE_HINT = 'The latest saved list for this practice size is ready.';
+export const SAVED_WORD_LISTS_LOADING_LABEL = 'Loading saved word lists...';
+export const ADD_WORDS_ICON = '+';
+export const EDIT_WORDS_ICON = '✦';
+export const NAVIGATION_CHEVRON = '›';
+export const CONTINUE_ARROW = '→';

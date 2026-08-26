@@ -44,13 +44,13 @@ export const styles = StyleSheet.create({
   quizBody: {
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 34,
+    paddingBottom: 24,
   },
   question: {
-    minHeight: 150,
+    minHeight: 110,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 22,
+    marginBottom: 16,
   },
   promptLabel: {
     color: '#c56f64',
@@ -63,15 +63,13 @@ export const styles = StyleSheet.create({
     width: '100%',
     color: '#50342f',
     fontWeight: '900',
-    fontSize: 64,
-    lineHeight: 76,
+    fontSize: 54,
+    lineHeight: 64,
     letterSpacing: -1.8,
     textAlign: 'center',
     marginTop: 7,
   },
-  answerGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+  answerList: {
+    gap: 8,
   },
 });

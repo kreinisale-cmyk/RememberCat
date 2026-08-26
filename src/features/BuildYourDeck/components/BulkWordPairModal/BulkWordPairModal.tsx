@@ -5,11 +5,12 @@ import { ThemedText } from '@/components/themed-text';
 import { BULK_WORD_PAIR_MODAL_COPY } from './constants';
 import { styles } from './styles';
 import { BulkWordPairModalProps } from './types';
-import { getModalKeyboardBehavior } from './utils';
+import { createBulkWordPairModalDescription, getModalKeyboardBehavior } from './utils';
 
 export function BulkWordPairModal({
   visible,
   contents,
+  wordPairLimit,
   onChange,
   onClose,
   onSave,
@@ -30,7 +31,7 @@ export function BulkWordPairModal({
             </Pressable>
           </View>
           <ThemedText style={styles.description}>
-            {BULK_WORD_PAIR_MODAL_COPY.description}
+            {createBulkWordPairModalDescription(wordPairLimit)}
           </ThemedText>
           <TextInput
             autoFocus

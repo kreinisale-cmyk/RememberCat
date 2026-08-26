@@ -1,8 +1,11 @@
 import { WordPair } from '@/features/GameSession/types';
 
 export enum GameStage {
+  Preparation = 'preparation',
+  EasyReinforcement = 'easy-reinforcement',
   MainRound = 'main-round',
   TimedRoundTransition = 'timed-round-transition',
+  ChallengeFailed = 'challenge-failed',
   PracticeTransition = 'practice-transition',
   DifficultWordsPractice = 'difficult-words-practice',
   FinalQuizTransition = 'final-quiz-transition',
@@ -14,6 +17,18 @@ export enum MatchFeedback {
   None = 'none',
   Correct = 'correct',
   Incorrect = 'incorrect',
+}
+
+export enum ReinforcementFeedback {
+  None = 'none',
+  Correct = 'correct',
+  Incorrect = 'incorrect',
+}
+
+export enum MatchCelebrationAnimation {
+  Burst = 'burst',
+  Shatter = 'shatter',
+  Portal = 'portal',
 }
 
 export enum FinalQuizFeedback {
@@ -46,6 +61,11 @@ export type WordPairMismatchStatistics = {
 };
 
 export type FinalQuizAnswerChoice = {
+  wordPairId: string;
+  translation: string;
+};
+
+export type ReinforcementAnswerChoice = {
   wordPairId: string;
   translation: string;
 };
