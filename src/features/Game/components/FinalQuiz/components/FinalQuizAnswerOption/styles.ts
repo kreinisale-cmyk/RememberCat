@@ -1,5 +1,7 @@
 import { StyleSheet } from 'react-native';
 
+import { RememberCatColors, RememberCatFonts } from '@/constants/theme';
+
 export const styles = StyleSheet.create({
   wrapper: {
     width: '100%',
@@ -12,11 +14,11 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 15,
     borderWidth: 1.5,
-    borderColor: '#ead8cc',
-    backgroundColor: '#fff',
+    borderColor: RememberCatColors.border,
+    backgroundColor: RememberCatColors.card,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    shadowColor: '#6c4438',
+    shadowColor: RememberCatColors.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.07,
     shadowRadius: 5,
@@ -24,35 +26,35 @@ export const styles = StyleSheet.create({
   },
   buttonPressed: {
     transform: [{ scale: 0.97 }],
-    backgroundColor: '#fff1e8',
+    backgroundColor: RememberCatColors.selectedBackground,
   },
   correctButton: {
-    borderColor: '#49a461',
-    backgroundColor: '#49a461',
+    borderColor: RememberCatColors.success,
+    backgroundColor: RememberCatColors.success,
     shadowColor: '#2d7d42',
     shadowOpacity: 0.24,
     elevation: 5,
   },
   incorrectButton: {
-    borderColor: '#d95d59',
-    backgroundColor: '#fff0ee',
+    borderColor: RememberCatColors.destructive,
+    backgroundColor: RememberCatColors.destructiveBackground,
   },
   label: {
     flexShrink: 1,
-    color: '#5d4038',
-    fontWeight: '800',
+    color: RememberCatColors.foreground,
+    fontFamily: RememberCatFonts.bodyExtraBold,
     fontSize: 16,
     lineHeight: 21,
     textAlign: 'center',
   },
   correctLabel: {
-    color: '#fff',
+    color: RememberCatColors.successForeground,
   },
   incorrectLabel: {
-    color: '#b43f3b',
+    color: RememberCatColors.destructive,
   },
   check: {
-    color: '#fff',
+    color: RememberCatColors.successForeground,
     fontWeight: '900',
     fontSize: 18,
     lineHeight: 22,

@@ -1,12 +1,15 @@
 import { StyleSheet } from 'react-native';
 
+import { RememberCatColors, RememberCatFonts } from '@/constants/theme';
+
 export const styles = StyleSheet.create({
   actions: {
     paddingTop: 8,
     paddingBottom: 4,
   },
   hint: {
-    color: '#9a786d',
+    color: RememberCatColors.mutedForeground,
+    fontFamily: RememberCatFonts.body,
     textAlign: 'center',
     fontSize: 11,
     lineHeight: 16,
@@ -15,22 +18,22 @@ export const styles = StyleSheet.create({
   startButton: {
     height: 57,
     borderRadius: 18,
-    backgroundColor: '#51342f',
+    backgroundColor: RememberCatColors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   startButtonDisabled: {
-    backgroundColor: '#cdb8ae',
+    opacity: 0.42,
   },
   startText: {
-    color: '#fff',
-    fontWeight: '800',
+    color: RememberCatColors.primaryForeground,
+    fontFamily: RememberCatFonts.bodyExtraBold,
     fontSize: 16,
   },
   startArrow: {
     position: 'absolute',
     right: 19,
-    color: '#f3bd9f',
+    color: RememberCatColors.primaryForeground,
     fontSize: 22,
   },
 });

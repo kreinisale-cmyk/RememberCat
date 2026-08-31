@@ -21,6 +21,7 @@ import {
   PRACTICE_ROUND_TITLE,
 } from './constants';
 import { useMatchingGame } from './hooks/useMatchingGame/useMatchingGame';
+import { usePersistCompletedGameStatistics } from './hooks/usePersistCompletedGameStatistics';
 import { styles } from './styles';
 import { GameStage } from './types';
 import {
@@ -31,15 +32,22 @@ import {
 } from './utils';
 
 export function Game() {
-  const { session } = useGameSession();
+  const { session, saveCompletedGameStatistics } = useGameSession();
   const matchingGame = useMatchingGame(session);
+
+  usePersistCompletedGameStatistics({
+    gameStage: matchingGame.gameStage,
+    savedDeckId: session?.savedDeckId ?? null,
+    completedWordStatistics: matchingGame.completedWordStatistics,
+    saveCompletedGameStatistics,
+  });
 
   if (!session) {
     return <Redirect href={GAME_SETUP_ROUTE} />;
   }
 
   function leaveGame() {
-    router.back();
+    router.replace(GAME_SETUP_ROUTE);
   }
 
   function returnToGameSetup() {

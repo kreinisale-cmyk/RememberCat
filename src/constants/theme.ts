@@ -62,3 +62,36 @@ export const Spacing = {
 } as const;
 
 export const MaxContentWidth = 800;
+
+export const RememberCatColors = {
+  background: '#faf3e3',
+  foreground: '#4a233e',
+  card: '#fffdf8',
+  primary: '#e94646',
+  primaryForeground: '#fffbf3',
+  secondary: '#fbc77c',
+  secondaryForeground: '#663305',
+  muted: '#f6e9d5',
+  mutedForeground: '#805d6d',
+  accent: '#e17cc2',
+  accentForeground: '#fffafd',
+  border: '#e4d1bc',
+  selectedBackground: '#fde7e3',
+  primaryBorder: 'rgba(233, 70, 70, 0.4)',
+  primaryMuted: 'rgba(233, 70, 70, 0.6)',
+  destructive: '#dc3f4b',
+  destructiveBackground: 'rgba(220, 63, 75, 0.1)',
+  success: '#3f8f79',
+  successForeground: '#fffdf8',
+  successBackground: '#e7f6f2',
+  inputBackground: '#fffdfa',
+  scrim: 'rgba(74, 35, 62, 0.38)',
+  shadow: '#4a233e',
+} as const;
+
+export const RememberCatFonts = {
+  displaySemiBold: 'Fredoka_600SemiBold',
+  body: 'Nunito_400Regular',
+  bodyBold: 'Nunito_700Bold',
+  bodyExtraBold: 'Nunito_800ExtraBold',
+} as const;

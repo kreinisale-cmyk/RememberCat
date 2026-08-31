@@ -1,5 +1,7 @@
 import { StyleSheet } from 'react-native';
 
+import { RememberCatColors, RememberCatFonts } from '@/constants/theme';
+
 export const styles = StyleSheet.create({
   wrapper: {
     height: 58,
@@ -14,8 +16,8 @@ export const styles = StyleSheet.create({
     backfaceVisibility: 'hidden',
     borderRadius: 16,
     borderWidth: 1.5,
-    borderColor: '#efdcd0',
-    backgroundColor: '#fff',
+    borderColor: RememberCatColors.border,
+    backgroundColor: RememberCatColors.card,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
@@ -250,7 +252,7 @@ export const styles = StyleSheet.create({
     zIndex: 1,
     fontSize: 14,
     lineHeight: 20,
-    color: '#5d4038',
-    fontWeight: '700',
+    color: RememberCatColors.foreground,
+    fontFamily: RememberCatFonts.bodyBold,
   },
 });

@@ -1,17 +1,19 @@
+import ChevronRight from 'lucide-react-native/icons/chevron-right';
+import Pencil from 'lucide-react-native/icons/pencil';
+import Plus from 'lucide-react-native/icons/plus';
 import { Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { RememberCatColors } from '@/constants/theme';
 
 import {
   ADD_NEW_WORDS_LABEL,
-  ADD_WORDS_ICON,
-  CONTINUE_ARROW,
   CONTINUE_PRACTICE_HINT,
   CONTINUE_PRACTICE_LABEL,
   EDIT_WORD_LIST_LABEL,
-  EDIT_WORDS_ICON,
-  NAVIGATION_CHEVRON,
   SAVED_WORD_LISTS_LOADING_LABEL,
+  WORD_LIST_ACTION_ICON_SIZE,
+  WORD_LIST_CHEVRON_SIZE,
 } from './constants';
 import { styles } from './styles';
 import { WordListSetupActionsProps } from './types';
@@ -40,10 +42,18 @@ export function WordListSetupActions({
     );
   } else if (latestSavedDeck) {
     return (
-      <>
-        <Pressable accessibilityRole="button" onPress={onEdit} style={styles.card}>
+      <View style={styles.section}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onEdit}
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        >
           <View style={styles.icon}>
-            <ThemedText style={styles.iconText}>{EDIT_WORDS_ICON}</ThemedText>
+            <Pencil
+              color={RememberCatColors.secondaryForeground}
+              size={WORD_LIST_ACTION_ICON_SIZE}
+              strokeWidth={2.4}
+            />
           </View>
           <View style={styles.copy}>
             <ThemedText style={styles.title}>{EDIT_WORD_LIST_LABEL}</ThemedText>
@@ -51,29 +61,48 @@ export function WordListSetupActions({
               {createEditWordListDetail(latestSavedDeck.name)}
             </ThemedText>
           </View>
-          <ThemedText style={styles.chevron}>{NAVIGATION_CHEVRON}</ThemedText>
+          <ChevronRight
+            color={RememberCatColors.mutedForeground}
+            size={WORD_LIST_CHEVRON_SIZE}
+            strokeWidth={2.4}
+          />
         </Pressable>
-        <View style={styles.continueActions}>
-          <ThemedText style={styles.continueHint}>{CONTINUE_PRACTICE_HINT}</ThemedText>
-          <Pressable accessibilityRole="button" onPress={onContinue} style={styles.continueButton}>
-            <ThemedText style={styles.continueText}>{CONTINUE_PRACTICE_LABEL}</ThemedText>
-            <ThemedText style={styles.continueArrow}>{CONTINUE_ARROW}</ThemedText>
-          </Pressable>
-        </View>
-      </>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onContinue}
+          style={({ pressed }) => [styles.continueButton, pressed && styles.cardPressed]}
+        >
+          <ThemedText style={styles.continueText}>{CONTINUE_PRACTICE_LABEL}</ThemedText>
+        </Pressable>
+        <ThemedText style={styles.continueHint}>{CONTINUE_PRACTICE_HINT}</ThemedText>
+      </View>
     );
   } else {
     return (
-      <Pressable accessibilityRole="button" onPress={onAdd} style={styles.card}>
-        <View style={styles.icon}>
-          <ThemedText style={styles.iconText}>{ADD_WORDS_ICON}</ThemedText>
-        </View>
-        <View style={styles.copy}>
-          <ThemedText style={styles.title}>{ADD_NEW_WORDS_LABEL}</ThemedText>
-          <ThemedText style={styles.detail}>{createAddNewWordsDetail(deckSize)}</ThemedText>
-        </View>
-        <ThemedText style={styles.chevron}>{NAVIGATION_CHEVRON}</ThemedText>
-      </Pressable>
+      <View style={styles.section}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={onAdd}
+          style={({ pressed }) => [styles.emptyCard, pressed && styles.cardPressed]}
+        >
+          <View style={styles.addIcon}>
+            <Plus
+              color={RememberCatColors.primaryForeground}
+              size={WORD_LIST_ACTION_ICON_SIZE}
+              strokeWidth={2.6}
+            />
+          </View>
+          <View style={styles.copy}>
+            <ThemedText style={styles.title}>{ADD_NEW_WORDS_LABEL}</ThemedText>
+            <ThemedText style={styles.detail}>{createAddNewWordsDetail(deckSize)}</ThemedText>
+          </View>
+          <ChevronRight
+            color={RememberCatColors.mutedForeground}
+            size={WORD_LIST_CHEVRON_SIZE}
+            strokeWidth={2.4}
+          />
+        </Pressable>
+      </View>
     );
   }
 }

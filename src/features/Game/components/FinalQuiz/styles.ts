@@ -1,10 +1,12 @@
 import { StyleSheet } from 'react-native';
 
+import { RememberCatColors, RememberCatFonts } from '@/constants/theme';
+
 export const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
-    backgroundColor: '#fff8f1',
+    backgroundColor: RememberCatColors.background,
   },
   top: {
     height: 58,
@@ -19,7 +21,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   close: {
-    color: '#9a776c',
+    color: RememberCatColors.mutedForeground,
     fontSize: 30,
     lineHeight: 36,
   },
@@ -28,16 +30,16 @@ export const styles = StyleSheet.create({
     height: 10,
     overflow: 'hidden',
     borderRadius: 9,
-    backgroundColor: '#f0ddd1',
+    backgroundColor: RememberCatColors.muted,
   },
   fill: {
     height: '100%',
     borderRadius: 9,
-    backgroundColor: '#d98072',
+    backgroundColor: RememberCatColors.primary,
   },
   progressLabel: {
-    color: '#9a776c',
-    fontWeight: '800',
+    color: RememberCatColors.mutedForeground,
+    fontFamily: RememberCatFonts.bodyExtraBold,
     fontSize: 12,
     lineHeight: 18,
   },
@@ -53,16 +55,16 @@ export const styles = StyleSheet.create({
     marginBottom: 16,
   },
   promptLabel: {
-    color: '#c56f64',
-    fontWeight: '900',
+    color: RememberCatColors.primary,
+    fontFamily: RememberCatFonts.bodyExtraBold,
     letterSpacing: 1.5,
     fontSize: 12,
     lineHeight: 18,
   },
   promptWord: {
     width: '100%',
-    color: '#50342f',
-    fontWeight: '900',
+    color: RememberCatColors.foreground,
+    fontFamily: RememberCatFonts.displaySemiBold,
     fontSize: 54,
     lineHeight: 64,
     letterSpacing: -1.8,

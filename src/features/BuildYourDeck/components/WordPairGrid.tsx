@@ -1,6 +1,7 @@
 import { Pressable, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { RememberCatColors } from '@/constants/theme';
 import { WordPair } from '@/features/GameSession/types';
 
 import { styles } from '../styles';
@@ -27,7 +28,7 @@ export function WordPairGrid({ pairs, onEdit, onRemove }: WordPairGridProps) {
             value={pair.word}
             onChangeText={(value) => onEdit(pair.id, 'word', value)}
             placeholder="Word"
-            placeholderTextColor="#bea89d"
+            placeholderTextColor={RememberCatColors.mutedForeground}
             style={styles.input}
             returnKeyType="next"
           />
@@ -35,7 +36,7 @@ export function WordPairGrid({ pairs, onEdit, onRemove }: WordPairGridProps) {
             value={pair.translation}
             onChangeText={(value) => onEdit(pair.id, 'translation', value)}
             placeholder="Translation"
-            placeholderTextColor="#bea89d"
+            placeholderTextColor={RememberCatColors.mutedForeground}
             style={styles.input}
           />
         </View>

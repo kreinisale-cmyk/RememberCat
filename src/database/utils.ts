@@ -1,7 +1,7 @@
-import { DeckSize, SavedDeck, WordPair } from '@/features/GameSession/types';
+import { DeckSize, SavedDeck, WordPair, WordStatistic } from '@/features/GameSession/types';
 import { isCompleteWordPair } from '@/features/GameSession/utils';
 
-import { SavedDeckDatabaseRow } from './types';
+import { SavedDeckDatabaseRow, WordStatisticDatabaseRow } from './types';
 import { SUPPORTED_SAVED_DECK_SIZES } from './constants';
 
 export function createSavedDeckName(pairs: WordPair[]) {
@@ -53,4 +53,37 @@ export function parseSavedDeckDatabaseRow(row: SavedDeckDatabaseRow): SavedDeck 
   } catch {
     return null;
   }
+}
+
+export function findChangedWordPairIds(previousPairs: WordPair[], nextPairs: WordPair[]) {
+  const nextPairById = new Map(nextPairs.map((wordPair) => [wordPair.id, wordPair]));
+
+  return previousPairs.flatMap((previousPair) => {
+    const nextPair = nextPairById.get(previousPair.id);
+    const hasChanged =
+      !nextPair ||
+      previousPair.word.trim() !== nextPair.word.trim() ||
+      previousPair.translation.trim() !== nextPair.translation.trim();
+
+    return hasChanged ? [previousPair.id] : [];
+  });
+}
+
+export function parseWordStatisticDatabaseRow(row: WordStatisticDatabaseRow): WordStatistic {
+  return {
+    savedDeckId: row.savedDeckId,
+    wordPairId: row.wordPairId,
+    completedGameCount: row.completedGameCount,
+    bestAccuracy: row.bestAccuracy,
+    bestCorrectAttemptCount: row.bestCorrectAttemptCount,
+    bestTotalAttemptCount: row.bestTotalAttemptCount,
+    lastPlayedAt: row.lastPlayedAt,
+  };
+}
+
+export function shouldReplaceBestWordStatistic(
+  previousBestAccuracy: number,
+  completedGameAccuracy: number,
+) {
+  return completedGameAccuracy > previousBestAccuracy;
 }

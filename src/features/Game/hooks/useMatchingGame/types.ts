@@ -11,7 +11,7 @@ import {
   TimedRoundPhase,
   WordPairLearningStatistics,
 } from '../../types';
-import { WordPair } from '@/features/GameSession/types';
+import { CompletedWordStatistic, WordPair } from '@/features/GameSession/types';
 
 export type UseMatchingGameResult = {
   gameStage: GameStage;
@@ -51,6 +51,7 @@ export type UseMatchingGameResult = {
   selectedFinalQuizAnswerId: string | null;
   passedFinalQuizWordPairCount: number;
   finalQuizWordPairCount: number;
+  completedWordStatistics: CompletedWordStatistic[];
   acknowledgePreparationWord: () => void;
   selectReinforcementAnswer: (wordPairId: string) => void;
   selectWordCard: (boardPairId: string) => void;

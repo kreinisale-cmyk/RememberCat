@@ -5,3 +5,13 @@ export type SavedDeckDatabaseRow = {
   pairCount: number;
   updatedAt: number;
 };
+
+export type WordStatisticDatabaseRow = {
+  savedDeckId: string;
+  wordPairId: string;
+  completedGameCount: number;
+  bestAccuracy: number;
+  bestCorrectAttemptCount: number;
+  bestTotalAttemptCount: number;
+  lastPlayedAt: number;
+};

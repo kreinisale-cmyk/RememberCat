@@ -1,1 +1,2 @@
 export const SETTINGS_CARD_ACCESSIBILITY_SUFFIX = 'setting';
+export const SETTINGS_CARD_ICON_SIZE = 18;

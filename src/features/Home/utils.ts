@@ -1,5 +1,3 @@
-import { TextStyle } from 'react-native';
-
-export function getHeartPosition(position: 'left' | 'right'): TextStyle {
-  return position === 'left' ? { left: '12%', top: '24%' } : { right: '13%', top: '17%' };
+export function createHomeFooterMessage() {
+  return 'No account needed — your decks stay on this device.';
 }

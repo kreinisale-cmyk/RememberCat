@@ -1,4 +1,11 @@
-import { FocusMode, GameSession, MatchMode, WordPair } from '@/features/GameSession/types';
+import {
+  CompletedWordStatistic,
+  FocusMode,
+  GameSession,
+  MatchMode,
+  WordAttemptStatistic,
+  WordPair,
+} from '@/features/GameSession/types';
 
 import {
   FinalQuizAnswerChoice,
@@ -386,6 +393,64 @@ export function createInitialMismatchStatistics(wordPairs: WordPair[]) {
     wordPairId: wordPair.id,
     mismatchCount: 0,
   }));
+}
+
+export function createInitialWordAttemptStatistics(wordPairs: WordPair[]) {
+  return wordPairs.map<WordAttemptStatistic>((wordPair) => ({
+    wordPairId: wordPair.id,
+    correctAttemptCount: 0,
+    incorrectAttemptCount: 0,
+  }));
+}
+
+export function incrementWordCorrectAttempt(
+  wordAttemptStatistics: WordAttemptStatistic[],
+  wordPairId: string,
+) {
+  return wordAttemptStatistics.map((wordStatistic) => {
+    if (wordStatistic.wordPairId === wordPairId) {
+      return {
+        ...wordStatistic,
+        correctAttemptCount: wordStatistic.correctAttemptCount + 1,
+      };
+    }
+
+    return wordStatistic;
+  });
+}
+
+export function incrementWordIncorrectAttempt(
+  wordAttemptStatistics: WordAttemptStatistic[],
+  wordPairId: string,
+) {
+  return wordAttemptStatistics.map((wordStatistic) => {
+    if (wordStatistic.wordPairId === wordPairId) {
+      return {
+        ...wordStatistic,
+        incorrectAttemptCount: wordStatistic.incorrectAttemptCount + 1,
+      };
+    }
+
+    return wordStatistic;
+  });
+}
+
+export function createCompletedWordStatistics(wordAttemptStatistics: WordAttemptStatistic[]) {
+  return wordAttemptStatistics.map<CompletedWordStatistic>((wordStatistic) => {
+    const totalAttemptCount =
+      wordStatistic.correctAttemptCount + wordStatistic.incorrectAttemptCount;
+    const accuracy =
+      totalAttemptCount > 0
+        ? Math.round((wordStatistic.correctAttemptCount / totalAttemptCount) * 100)
+        : 0;
+
+    return {
+      wordPairId: wordStatistic.wordPairId,
+      correctAttemptCount: wordStatistic.correctAttemptCount,
+      totalAttemptCount,
+      accuracy,
+    };
+  });
 }
 
 export function incrementWordPairMismatchCount(

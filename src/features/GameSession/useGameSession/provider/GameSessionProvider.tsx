@@ -4,12 +4,20 @@ import { GameSession } from '../../types';
 import { cloneWordPairs, createInitialGameSession, isCompleteWordPair } from '../../utils';
 import { GameSessionContext } from '../context/GameSessionContext';
 import { useSavedDeckLibrary } from '../hooks/useSavedDeckLibrary';
+import { useWordStatisticsLibrary } from '../hooks/useWordStatisticsLibrary';
 
 export function GameSessionProvider({ children }: PropsWithChildren) {
   const [draft, setDraft] = useState(createInitialGameSession);
   const [session, setSession] = useState<GameSession | null>(null);
   const { savedDecks, isSavedDeckLibraryLoading, savedDeckLibraryError, saveDeck, removeDeck } =
     useSavedDeckLibrary();
+  const {
+    wordStatistics,
+    isWordStatisticsLoading,
+    wordStatisticsError,
+    refreshWordStatistics,
+    saveCompletedGameStatistics,
+  } = useWordStatisticsLibrary();
 
   const updateDraft = useCallback((update: Partial<GameSession>) => {
     setDraft((currentDraft) => ({ ...currentDraft, ...update }));
@@ -27,6 +35,7 @@ export function GameSessionProvider({ children }: PropsWithChildren) {
         ...currentDraft,
         deckSize: selectedSavedDeck.pairCount,
         pairs: cloneWordPairs(selectedSavedDeck.pairs),
+        savedDeckId: selectedSavedDeck.id,
       }));
 
       return true;
@@ -47,6 +56,7 @@ export function GameSessionProvider({ children }: PropsWithChildren) {
         ...draft,
         deckSize: selectedSavedDeck.pairCount,
         pairs: sessionPairs,
+        savedDeckId: selectedSavedDeck.id,
       };
 
       setDraft(selectedSession);
@@ -64,12 +74,35 @@ export function GameSessionProvider({ children }: PropsWithChildren) {
         sessionPairs.length === draft.deckSize && sessionPairs.every(isCompleteWordPair);
 
       if (isCompleteDeck) {
-        await saveDeck(sessionPairs, savedDeckId);
+        const persistedSavedDeckId = await saveDeck(sessionPairs, savedDeckId);
+
+        await refreshWordStatistics();
+
+        setSession({
+          ...draft,
+          pairs: sessionPairs,
+          savedDeckId: persistedSavedDeckId,
+        });
+
+        return;
       }
 
       setSession({ ...draft, pairs: sessionPairs });
     },
-    [draft, saveDeck],
+    [draft, refreshWordStatistics, saveDeck],
+  );
+
+  const removeSavedDeck = useCallback(
+    async (savedDeckId: string) => {
+      const wasRemoved = await removeDeck(savedDeckId);
+
+      if (wasRemoved) {
+        await refreshWordStatistics();
+      }
+
+      return wasRemoved;
+    },
+    [refreshWordStatistics, removeDeck],
   );
 
   const value = useMemo(
@@ -79,23 +112,31 @@ export function GameSessionProvider({ children }: PropsWithChildren) {
       savedDecks,
       isSavedDeckLibraryLoading,
       savedDeckLibraryError,
+      wordStatistics,
+      isWordStatisticsLoading,
+      wordStatisticsError,
       updateDraft,
       reuseSavedDeck,
-      removeSavedDeck: removeDeck,
+      removeSavedDeck,
       startSavedDeckGame,
       startGameSession,
+      saveCompletedGameStatistics,
     }),
     [
       draft,
       isSavedDeckLibraryLoading,
+      isWordStatisticsLoading,
       savedDeckLibraryError,
       reuseSavedDeck,
-      removeDeck,
+      removeSavedDeck,
       savedDecks,
+      saveCompletedGameStatistics,
       session,
       startSavedDeckGame,
       startGameSession,
       updateDraft,
+      wordStatistics,
+      wordStatisticsError,
     ],
   );
 

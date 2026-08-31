@@ -1,5 +1,7 @@
 import { StyleSheet } from 'react-native';
 
+import { RememberCatColors, RememberCatFonts } from '@/constants/theme';
+
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -7,12 +9,18 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingBottom: 40,
   },
-  icon: { color: '#e39a87', fontSize: 43 },
+  icon: { color: RememberCatColors.primaryMuted, fontSize: 43 },
   title: {
-    color: '#5a3933',
+    color: RememberCatColors.foreground,
+    fontFamily: RememberCatFonts.displaySemiBold,
     fontSize: 20,
     fontWeight: '800',
     marginTop: 10,
   },
-  description: { color: '#9c7e73', fontSize: 13, marginTop: 6 },
+  description: {
+    color: RememberCatColors.mutedForeground,
+    fontFamily: RememberCatFonts.body,
+    fontSize: 13,
+    marginTop: 6,
+  },
 });

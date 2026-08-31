@@ -1,31 +1,35 @@
 import { StyleSheet } from 'react-native';
 
+import { RememberCatColors, RememberCatFonts } from '@/constants/theme';
+
 export const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    gap: 5,
-    borderRadius: 14,
-    backgroundColor: '#f8e4d4',
+    gap: 4,
+    borderRadius: 16,
+    backgroundColor: RememberCatColors.muted,
     padding: 4,
   },
   option: {
-    minWidth: 42,
-    minHeight: 38,
+    flex: 1,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 11,
+    borderRadius: 14,
     paddingHorizontal: 8,
   },
   selectedOption: {
-    backgroundColor: '#573733',
+    borderWidth: 1,
+    borderColor: RememberCatColors.selectedBackground,
+    backgroundColor: RememberCatColors.card,
   },
   optionText: {
-    color: '#916d61',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '900',
+    color: RememberCatColors.mutedForeground,
+    fontSize: 15,
+    lineHeight: 19,
+    fontFamily: RememberCatFonts.bodyBold,
   },
   selectedOptionText: {
-    color: '#ffffff',
+    color: RememberCatColors.primary,
   },
 });

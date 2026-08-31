@@ -1,17 +1,19 @@
 import { StyleSheet } from 'react-native';
 
+import { RememberCatColors } from '@/constants/theme';
+
 export const styles = StyleSheet.create({
   track: {
     flex: 1,
     height: 12,
     overflow: 'visible',
     borderRadius: 9,
-    backgroundColor: '#f0ddd1',
+    backgroundColor: RememberCatColors.muted,
   },
   fill: {
     height: '100%',
     borderRadius: 9,
-    backgroundColor: '#d98072',
+    backgroundColor: RememberCatColors.primary,
   },
   milestone: {
     position: 'absolute',
@@ -21,11 +23,11 @@ export const styles = StyleSheet.create({
     marginLeft: -9,
     borderRadius: 9,
     borderWidth: 3,
-    borderColor: '#d8bdb1',
-    backgroundColor: '#fff8f1',
+    borderColor: RememberCatColors.border,
+    backgroundColor: RememberCatColors.background,
   },
   completedMilestone: {
-    borderColor: '#c9695e',
-    backgroundColor: '#d98072',
+    borderColor: RememberCatColors.primary,
+    backgroundColor: RememberCatColors.primary,
   },
 });

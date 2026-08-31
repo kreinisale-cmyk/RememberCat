@@ -5,9 +5,12 @@ export const DEFAULT_GAME_SESSION: GameSession = {
   deckSize: DeckSize.Fifteen,
   focusMode: FocusMode.Timed,
   matchMode: MatchMode.Easy,
+  savedDeckId: null,
 };
 
 export const MISSING_GAME_SESSION_PROVIDER_ERROR =
   'useGameSession must be used inside a GameSessionProvider.';
 export const SAVED_DECK_LIBRARY_ERROR_MESSAGE =
   'Saved decks are temporarily unavailable on this device.';
+export const WORD_STATISTICS_ERROR_MESSAGE =
+  'Word statistics are temporarily unavailable on this device.';

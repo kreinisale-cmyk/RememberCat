@@ -1,5 +1,7 @@
 import { StyleSheet } from 'react-native';
 
+import { RememberCatColors, RememberCatFonts } from '@/constants/theme';
+
 export const styles = StyleSheet.create({
   content: {
     flex: 1,
@@ -20,11 +22,11 @@ export const styles = StyleSheet.create({
   close: {
     fontSize: 30,
     lineHeight: 36,
-    color: '#9a776c',
+    color: RememberCatColors.mutedForeground,
   },
   progressLabel: {
-    color: '#9a776c',
-    fontWeight: '800',
+    color: RememberCatColors.mutedForeground,
+    fontFamily: RememberCatFonts.bodyExtraBold,
     fontSize: 12,
   },
   heading: {
@@ -32,21 +34,22 @@ export const styles = StyleSheet.create({
     marginBottom: 20,
   },
   kicker: {
-    color: '#d17c70',
-    fontWeight: '800',
+    color: RememberCatColors.primary,
+    fontFamily: RememberCatFonts.bodyExtraBold,
     letterSpacing: 1.1,
     fontSize: 11,
   },
   title: {
-    color: '#50342f',
-    fontWeight: '800',
+    color: RememberCatColors.foreground,
+    fontFamily: RememberCatFonts.displaySemiBold,
     fontSize: 30,
     lineHeight: 38,
     letterSpacing: -1.1,
     marginTop: 5,
   },
   hint: {
-    color: '#916e63',
+    color: RememberCatColors.mutedForeground,
+    fontFamily: RememberCatFonts.body,
     fontSize: 14,
     lineHeight: 20,
     marginTop: 6,

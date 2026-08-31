@@ -47,15 +47,15 @@ export function useSavedDeckLibrary() {
   const saveDeck = useCallback(
     async (pairs: WordPair[], savedDeckId?: string) => {
       try {
-        await persistSavedDeck(pairs, savedDeckId);
+        const persistedSavedDeckId = await persistSavedDeck(pairs, savedDeckId);
         await refreshSavedDecks();
         setSavedDeckLibraryError(null);
 
-        return true;
+        return persistedSavedDeckId;
       } catch {
         setSavedDeckLibraryError(SAVED_DECK_LIBRARY_ERROR_MESSAGE);
 
-        return false;
+        return null;
       }
     },
     [refreshSavedDecks],

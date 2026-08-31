@@ -1,7 +1,7 @@
 import { DeckSize, SavedDeck, WordPair } from '@/features/GameSession/types';
 
 import { INPUT_AUTOMATION_ID_PREFIX, WORD_PAIR_SEPARATOR } from './constants';
-import { BuildYourDeckEntryMode, WordPairField } from './types';
+import { BuildYourDeckEntryMode, BuildYourDeckEntryOrigin, WordPairField } from './types';
 
 export function createWordPair(word: string, translation: string): WordPair {
   return {
@@ -49,9 +49,26 @@ export function filterSavedDecksByDeckSize(savedDecks: SavedDeck[], deckSize: De
 export function parseBuildYourDeckEntryMode(mode: string | string[] | undefined) {
   const resolvedMode = Array.isArray(mode) ? mode[0] : mode;
 
-  if (resolvedMode === BuildYourDeckEntryMode.Create) {
-    return BuildYourDeckEntryMode.Create;
+  if (
+    resolvedMode === BuildYourDeckEntryMode.Create ||
+    resolvedMode === BuildYourDeckEntryMode.Edit
+  ) {
+    return resolvedMode;
   }
 
   return BuildYourDeckEntryMode.Library;
+}
+
+export function parseBuildYourDeckEntryOrigin(origin: string | string[] | undefined) {
+  const resolvedOrigin = Array.isArray(origin) ? origin[0] : origin;
+
+  if (resolvedOrigin === BuildYourDeckEntryOrigin.GameSetup) {
+    return BuildYourDeckEntryOrigin.GameSetup;
+  }
+
+  return BuildYourDeckEntryOrigin.Words;
+}
+
+export function parseSingleRouteParameter(parameter: string | string[] | undefined) {
+  return Array.isArray(parameter) ? parameter[0] : parameter;
 }

@@ -1,9 +1,11 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { Href, router, useLocalSearchParams } from 'expo-router';
+import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import { useEffect, useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
+import { RememberCatColors } from '@/constants/theme';
 import { useGameSession } from '@/features/GameSession/useGameSession/useGameSession';
 
 import { BulkWordPairModal } from './components/BulkWordPairModal/BulkWordPairModal';
@@ -17,13 +19,16 @@ import {
   CURRENT_DECK_HINT,
   CURRENT_DECK_TITLE,
   GAME_ROUTE,
+  GAME_SETUP_ROUTE,
   SAVED_DECK_LIBRARY_INTRO,
+  WORDS_ROUTE,
 } from './constants';
 import { useBulkAddWordPairs } from './hooks/useBulkAddWordPairs';
 import { useImportWordPairs } from './hooks/useImportWordPairs';
 import { styles } from './styles';
 import {
   BuildYourDeckEntryMode,
+  BuildYourDeckEntryOrigin,
   BuildYourDeckRouteParams,
   BuildYourDeckViewMode,
   WordPairField,
@@ -33,6 +38,8 @@ import {
   filterSavedDecksByDeckSize,
   hasCompleteWordPair,
   parseBuildYourDeckEntryMode,
+  parseBuildYourDeckEntryOrigin,
+  parseSingleRouteParameter,
   removeWordPair,
   updateWordPair,
 } from './utils';
@@ -40,6 +47,8 @@ import {
 export function BuildYourDeck() {
   const routeParams = useLocalSearchParams<BuildYourDeckRouteParams>();
   const entryMode = parseBuildYourDeckEntryMode(routeParams.mode);
+  const entryOrigin = parseBuildYourDeckEntryOrigin(routeParams.origin);
+  const routeSavedDeckId = parseSingleRouteParameter(routeParams.savedDeckId);
   const {
     draft,
     savedDecks,
@@ -53,7 +62,7 @@ export function BuildYourDeck() {
   } = useGameSession();
 
   const [viewMode, setViewMode] = useState(() =>
-    entryMode === BuildYourDeckEntryMode.Create
+    entryMode === BuildYourDeckEntryMode.Create || entryMode === BuildYourDeckEntryMode.Edit
       ? BuildYourDeckViewMode.Editor
       : BuildYourDeckViewMode.Library,
   );
@@ -96,13 +105,26 @@ export function BuildYourDeck() {
 
   useEffect(() => {
     if (entryMode === BuildYourDeckEntryMode.Create) {
-      updateDraft({ pairs: [] });
+      updateDraft({ pairs: [], savedDeckId: null });
       setEditingSavedDeckId(null);
       setSelectedSavedDeckId(null);
       setImportMessage('');
       setViewMode(BuildYourDeckViewMode.Editor);
     }
   }, [entryMode, updateDraft]);
+
+  useEffect(() => {
+    if (entryMode !== BuildYourDeckEntryMode.Edit || !routeSavedDeckId) {
+      return;
+    }
+
+    if (reuseSavedDeck(routeSavedDeckId)) {
+      setEditingSavedDeckId(routeSavedDeckId);
+      setSelectedSavedDeckId(routeSavedDeckId);
+      setImportMessage('');
+      setViewMode(BuildYourDeckViewMode.Editor);
+    }
+  }, [entryMode, reuseSavedDeck, routeSavedDeckId]);
 
   function setDraftPairs(nextPairs: typeof pairs) {
     updateDraft({ pairs: nextPairs });
@@ -136,7 +158,7 @@ export function BuildYourDeck() {
   }
 
   function createNewDeck() {
-    updateDraft({ pairs: [] });
+    updateDraft({ pairs: [], savedDeckId: null });
     setEditingSavedDeckId(null);
     setImportMessage('');
     setViewMode(BuildYourDeckViewMode.Editor);
@@ -154,7 +176,23 @@ export function BuildYourDeck() {
 
   function navigateBack() {
     if (viewMode === BuildYourDeckViewMode.Editor) {
-      setViewMode(BuildYourDeckViewMode.Library);
+      if (
+        entryMode === BuildYourDeckEntryMode.Create &&
+        entryOrigin === BuildYourDeckEntryOrigin.GameSetup &&
+        pairs.length === 0
+      ) {
+        router.replace(GAME_SETUP_ROUTE);
+
+        return;
+      }
+
+      router.replace({
+        pathname: WORDS_ROUTE,
+        params: {
+          size: String(draft.deckSize),
+          selectedDeckId: editingSavedDeckId ?? undefined,
+        },
+      } as unknown as Href);
 
       return;
     }
@@ -191,8 +229,14 @@ export function BuildYourDeck() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.header}>
-          <Pressable onPress={navigateBack} hitSlop={12}>
-            <ThemedText style={styles.back}>‹</ThemedText>
+          <Pressable
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+            hitSlop={12}
+            onPress={navigateBack}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          >
+            <ArrowLeft color={RememberCatColors.foreground} size={20} strokeWidth={2.4} />
           </Pressable>
           <View>
             <ThemedText style={styles.kicker}>YOUR WORDS</ThemedText>
