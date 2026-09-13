@@ -1,7 +1,13 @@
-import { DeckSize, SavedDeck, WordPair, WordStatistic } from '@/features/GameSession/types';
-import { isCompleteWordPair } from '@/features/GameSession/utils';
+import {
+  DeckSize,
+  SavedDeck,
+  WordMastery,
+  WordPair,
+  WordStatistic,
+} from '@/features/GameSession/types';
+import { getMasteryLevel, isCompleteWordPair } from '@/features/GameSession/utils';
 
-import { SavedDeckDatabaseRow, WordStatisticDatabaseRow } from './types';
+import { SavedDeckDatabaseRow, WordMasteryDatabaseRow, WordStatisticDatabaseRow } from './types';
 import { SUPPORTED_SAVED_DECK_SIZES } from './constants';
 
 export function createSavedDeckName(pairs: WordPair[]) {
@@ -78,6 +84,17 @@ export function parseWordStatisticDatabaseRow(row: WordStatisticDatabaseRow): Wo
     bestCorrectAttemptCount: row.bestCorrectAttemptCount,
     bestTotalAttemptCount: row.bestTotalAttemptCount,
     lastPlayedAt: row.lastPlayedAt,
+  };
+}
+
+export function parseWordMasteryDatabaseRow(row: WordMasteryDatabaseRow): WordMastery {
+  return {
+    ...row,
+    level: getMasteryLevel(
+      row.completedAssessmentCount,
+      row.latestAccuracy,
+      row.cleanAssessmentStreak,
+    ),
   };
 }
 

@@ -2,7 +2,8 @@ import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
   chartCard: {
-    flex: 1,
+    minHeight: 190,
+    maxHeight: 340,
     overflow: 'hidden',
     borderRadius: 22,
     borderWidth: 1,

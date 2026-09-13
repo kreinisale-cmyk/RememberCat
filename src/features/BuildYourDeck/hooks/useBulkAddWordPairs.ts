@@ -2,7 +2,8 @@ import { useCallback } from 'react';
 
 import { WordPair } from '@/features/GameSession/types';
 
-import { parseWordPairFile } from '../utils';
+import { WordPairAdditionSource } from '../types';
+import { createWordPairAdditionMessage, parseWordPairFile, selectUniqueWordPairs } from '../utils';
 
 type UseBulkAddWordPairsOptions = {
   pairs: WordPair[];
@@ -20,17 +21,28 @@ export function useBulkAddWordPairs({
   return useCallback(
     (contents: string) => {
       const availableSlots = wordPairLimit - pairs.length;
-      const pairsToAdd = parseWordPairFile(contents).slice(0, availableSlots);
+      const parsedPairs = parseWordPairFile(contents);
+      const { acceptedPairs, skippedPairCount } = selectUniqueWordPairs(
+        pairs,
+        parsedPairs,
+        availableSlots,
+      );
 
-      if (!pairsToAdd.length) {
-        setImportMessage('No valid word - translation pairs found.');
+      if (!acceptedPairs.length) {
+        setImportMessage(
+          createWordPairAdditionMessage(WordPairAdditionSource.Bulk, 0, skippedPairCount),
+        );
 
         return false;
       }
 
-      setDraftPairs([...pairsToAdd, ...pairs]);
+      setDraftPairs([...acceptedPairs, ...pairs]);
       setImportMessage(
-        `Added ${pairsToAdd.length} word pair${pairsToAdd.length === 1 ? '' : 's'}.`,
+        createWordPairAdditionMessage(
+          WordPairAdditionSource.Bulk,
+          acceptedPairs.length,
+          skippedPairCount,
+        ),
       );
 
       return true;

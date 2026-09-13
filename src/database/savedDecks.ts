@@ -3,14 +3,15 @@ import * as SQLite from 'expo-sqlite';
 import { SavedDeck, WordPair } from '@/features/GameSession/types';
 
 import {
+  SAVED_DECK_DATABASE_VERSION,
   SAVED_DECK_DATABASE_NAME,
   SAVED_DECK_TABLE_NAME,
+  WORD_MASTERY_TABLE_NAME,
   WORD_STATISTICS_TABLE_NAME,
 } from './constants';
 import { SavedDeckDatabaseRow } from './types';
 import {
   createSavedDeckId,
-  createSavedDeckName,
   createSavedDeckSignature,
   findChangedWordPairIds,
   parseSavedDeckDatabaseRow,
@@ -18,38 +19,74 @@ import {
 
 let savedDeckDatabasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
-export async function getSavedDeckDatabase() {
-  if (!savedDeckDatabasePromise) {
-    savedDeckDatabasePromise = SQLite.openDatabaseAsync(SAVED_DECK_DATABASE_NAME);
+export class DuplicateSavedDeckError extends Error {
+  constructor() {
+    super('A saved deck with these word pairs already exists.');
+    this.name = 'DuplicateSavedDeckError';
+  }
+}
+
+async function migrateSavedDeckDatabase(database: SQLite.SQLiteDatabase) {
+  const versionRow = await database.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
+  const currentVersion = versionRow?.user_version ?? 0;
+
+  if (currentVersion >= SAVED_DECK_DATABASE_VERSION) {
+    return;
   }
 
-  const database = await savedDeckDatabasePromise;
+  await database.withTransactionAsync(async () => {
+    await database.execAsync(`
+      PRAGMA foreign_keys = ON;
+      CREATE TABLE IF NOT EXISTS ${SAVED_DECK_TABLE_NAME} (
+        id TEXT PRIMARY KEY NOT NULL,
+        signature TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        pairs_json TEXT NOT NULL,
+        pair_count INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS ${WORD_STATISTICS_TABLE_NAME} (
+        saved_deck_id TEXT NOT NULL,
+        word_pair_id TEXT NOT NULL,
+        completed_game_count INTEGER NOT NULL DEFAULT 0,
+        best_accuracy REAL NOT NULL DEFAULT 0,
+        best_correct_attempt_count INTEGER NOT NULL DEFAULT 0,
+        best_total_attempt_count INTEGER NOT NULL DEFAULT 0,
+        last_played_at INTEGER NOT NULL,
+        PRIMARY KEY (saved_deck_id, word_pair_id),
+        FOREIGN KEY (saved_deck_id) REFERENCES ${SAVED_DECK_TABLE_NAME}(id) ON DELETE CASCADE
+      );
+      CREATE TABLE IF NOT EXISTS ${WORD_MASTERY_TABLE_NAME} (
+        saved_deck_id TEXT NOT NULL,
+        word_pair_id TEXT NOT NULL,
+        completed_assessment_count INTEGER NOT NULL DEFAULT 0,
+        lifetime_correct_attempt_count INTEGER NOT NULL DEFAULT 0,
+        lifetime_incorrect_attempt_count INTEGER NOT NULL DEFAULT 0,
+        clean_assessment_streak INTEGER NOT NULL DEFAULT 0,
+        latest_accuracy REAL NOT NULL DEFAULT 0,
+        last_seen_at INTEGER NOT NULL,
+        last_missed_at INTEGER,
+        PRIMARY KEY (saved_deck_id, word_pair_id),
+        FOREIGN KEY (saved_deck_id) REFERENCES ${SAVED_DECK_TABLE_NAME}(id) ON DELETE CASCADE
+      );
+      PRAGMA user_version = ${SAVED_DECK_DATABASE_VERSION};
+    `);
+  });
+}
 
-  await database.execAsync(`
-    PRAGMA journal_mode = WAL;
-    PRAGMA foreign_keys = ON;
-    CREATE TABLE IF NOT EXISTS ${SAVED_DECK_TABLE_NAME} (
-      id TEXT PRIMARY KEY NOT NULL,
-      signature TEXT NOT NULL UNIQUE,
-      name TEXT NOT NULL,
-      pairs_json TEXT NOT NULL,
-      pair_count INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS ${WORD_STATISTICS_TABLE_NAME} (
-      saved_deck_id TEXT NOT NULL,
-      word_pair_id TEXT NOT NULL,
-      completed_game_count INTEGER NOT NULL DEFAULT 0,
-      best_accuracy REAL NOT NULL DEFAULT 0,
-      best_correct_attempt_count INTEGER NOT NULL DEFAULT 0,
-      best_total_attempt_count INTEGER NOT NULL DEFAULT 0,
-      last_played_at INTEGER NOT NULL,
-      PRIMARY KEY (saved_deck_id, word_pair_id),
-      FOREIGN KEY (saved_deck_id) REFERENCES ${SAVED_DECK_TABLE_NAME}(id) ON DELETE CASCADE
-    );
-  `);
+export async function getSavedDeckDatabase() {
+  if (!savedDeckDatabasePromise) {
+    savedDeckDatabasePromise = (async () => {
+      const database = await SQLite.openDatabaseAsync(SAVED_DECK_DATABASE_NAME);
 
-  return database;
+      await database.execAsync('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+      await migrateSavedDeckDatabase(database);
+
+      return database;
+    })();
+  }
+
+  return savedDeckDatabasePromise;
 }
 
 export async function loadSavedDecks() {
@@ -72,7 +109,7 @@ export async function loadSavedDecks() {
   });
 }
 
-export async function persistSavedDeck(pairs: WordPair[], savedDeckId?: string) {
+export async function persistSavedDeck(name: string, pairs: WordPair[], savedDeckId?: string) {
   const database = await getSavedDeckDatabase();
   const signature = createSavedDeckSignature(pairs);
   const signatureMatchRow = await database.getFirstAsync<{ id: string; pairsJson: string }>(
@@ -81,10 +118,14 @@ export async function persistSavedDeck(pairs: WordPair[], savedDeckId?: string) 
      WHERE signature = $signature`,
     { $signature: signature },
   );
+  if (signatureMatchRow && signatureMatchRow.id !== savedDeckId) {
+    throw new DuplicateSavedDeckError();
+  }
+
   const savedDeckValues = {
     $id: savedDeckId ?? createSavedDeckId(),
     $signature: signature,
-    $name: createSavedDeckName(pairs),
+    $name: name.trim(),
     $pairsJson: JSON.stringify(pairs),
     $pairCount: pairs.length,
     $updatedAt: Date.now(),
@@ -117,6 +158,11 @@ export async function persistSavedDeck(pairs: WordPair[], savedDeckId?: string) 
              WHERE saved_deck_id = $savedDeckId AND word_pair_id = $wordPairId`,
             { $savedDeckId: savedDeckId, $wordPairId: wordPairId },
           );
+          await database.runAsync(
+            `DELETE FROM ${WORD_MASTERY_TABLE_NAME}
+             WHERE saved_deck_id = $savedDeckId AND word_pair_id = $wordPairId`,
+            { $savedDeckId: savedDeckId, $wordPairId: wordPairId },
+          );
         }
       }
 
@@ -127,38 +173,11 @@ export async function persistSavedDeck(pairs: WordPair[], savedDeckId?: string) 
   await database.runAsync(
     `INSERT INTO ${SAVED_DECK_TABLE_NAME}
       (id, signature, name, pairs_json, pair_count, updated_at)
-     VALUES ($id, $signature, $name, $pairsJson, $pairCount, $updatedAt)
-     ON CONFLICT(signature) DO UPDATE SET
-       name = excluded.name,
-       pairs_json = excluded.pairs_json,
-       pair_count = excluded.pair_count,
-       updated_at = excluded.updated_at`,
+     VALUES ($id, $signature, $name, $pairsJson, $pairCount, $updatedAt)`,
     savedDeckValues,
   );
 
-  if (signatureMatchRow) {
-    const previousPairs = JSON.parse(signatureMatchRow.pairsJson) as WordPair[];
-    const changedWordPairIds = findChangedWordPairIds(previousPairs, pairs);
-
-    for (const wordPairId of changedWordPairIds) {
-      await database.runAsync(
-        `DELETE FROM ${WORD_STATISTICS_TABLE_NAME}
-         WHERE saved_deck_id = $savedDeckId AND word_pair_id = $wordPairId`,
-        { $savedDeckId: signatureMatchRow.id, $wordPairId: wordPairId },
-      );
-    }
-  }
-
-  const savedDeckRow = await database.getFirstAsync<{ id: string }>(
-    `SELECT id FROM ${SAVED_DECK_TABLE_NAME} WHERE signature = $signature`,
-    { $signature: signature },
-  );
-
-  if (!savedDeckRow) {
-    throw new Error('The saved word list could not be resolved after saving.');
-  }
-
-  return savedDeckRow.id;
+  return savedDeckValues.$id;
 }
 
 export async function deleteSavedDeck(savedDeckId: string) {
@@ -166,6 +185,9 @@ export async function deleteSavedDeck(savedDeckId: string) {
 
   await database.withTransactionAsync(async () => {
     await database.runAsync(`DELETE FROM ${WORD_STATISTICS_TABLE_NAME} WHERE saved_deck_id = $id`, {
+      $id: savedDeckId,
+    });
+    await database.runAsync(`DELETE FROM ${WORD_MASTERY_TABLE_NAME} WHERE saved_deck_id = $id`, {
       $id: savedDeckId,
     });
     await database.runAsync(`DELETE FROM ${SAVED_DECK_TABLE_NAME} WHERE id = $id`, {

@@ -1,6 +1,7 @@
 import {
   FinalQuizAnswerChoice,
   FinalQuizFeedback,
+  FocusedReviewState,
   GameBoardPair,
   GameStage,
   MatchCelebrationAnimation,
@@ -10,6 +11,7 @@ import {
   SelectedBoardPair,
   TimedRoundPhase,
   WordPairLearningStatistics,
+  CompletedGameResult,
 } from '../../types';
 import { CompletedWordStatistic, WordPair } from '@/features/GameSession/types';
 
@@ -52,7 +54,12 @@ export type UseMatchingGameResult = {
   passedFinalQuizWordPairCount: number;
   finalQuizWordPairCount: number;
   completedWordStatistics: CompletedWordStatistic[];
+  focusedReviewAssessmentStatistics: CompletedWordStatistic[];
+  focusedReviewWordStatistics: CompletedWordStatistic[];
+  focusedReviewState: FocusedReviewState;
+  gameResult: CompletedGameResult | null;
   acknowledgePreparationWord: () => void;
+  skipPreparation: () => void;
   selectReinforcementAnswer: (wordPairId: string) => void;
   selectWordCard: (boardPairId: string) => void;
   selectTranslationCard: (boardPairId: string) => void;
@@ -61,4 +68,5 @@ export type UseMatchingGameResult = {
   startDifficultWordsPractice: () => void;
   startFinalQuiz: () => void;
   continueTimedRound: () => void;
+  startFocusedReview: () => void;
 };

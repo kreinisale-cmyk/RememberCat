@@ -1,4 +1,9 @@
-import { WordPair } from '@/features/GameSession/types';
+import {
+  CompletedAssessmentStatistic,
+  CompletedWordStatistic,
+  WordMastery,
+  WordPair,
+} from '@/features/GameSession/types';
 
 export enum GameStage {
   Preparation = 'preparation',
@@ -43,6 +48,14 @@ export enum TimedRoundPhase {
   SixCards = 3,
 }
 
+export enum FocusedReviewState {
+  Unavailable = 'unavailable',
+  Available = 'available',
+  Practice = 'practice',
+  Quiz = 'quiz',
+  Complete = 'complete',
+}
+
 export type GameBoardPair = {
   boardPairId: string;
   wordPairId: string;
@@ -73,4 +86,28 @@ export type ReinforcementAnswerChoice = {
 export type WordPairLearningStatistics = WordPair & {
   mismatchCount: number;
   isPracticed: boolean;
+};
+
+export type CompletedGameWordResult = {
+  wordPair: WordPair;
+  correctAttemptCount: number;
+  incorrectAttemptCount: number;
+  assessmentCorrectAttemptCount: number;
+  assessmentIncorrectAttemptCount: number;
+  assessmentAccuracy: number;
+  masteryBefore: WordMastery;
+  masteryAfter: WordMastery;
+};
+
+export type CompletedGameResult = {
+  completedAt: number;
+  assessmentAccuracy: number;
+  assessmentCorrectAttemptCount: number;
+  assessmentIncorrectAttemptCount: number;
+  totalIncorrectAttemptCount: number;
+  missedWordPairIds: string[];
+  completedWordStatistics: CompletedWordStatistic[];
+  assessmentStatistics: CompletedAssessmentStatistic[];
+  learningStatistics: WordPairLearningStatistics[];
+  wordResults: CompletedGameWordResult[];
 };

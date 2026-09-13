@@ -1,6 +1,11 @@
 import { PropsWithChildren, useCallback, useMemo, useState } from 'react';
 
-import { GameSession } from '../../types';
+import {
+  GameSession,
+  SavedDeckPersistenceStatus,
+  StartGameSessionOptions,
+  StartGameSessionStatus,
+} from '../../types';
 import { cloneWordPairs, createInitialGameSession, isCompleteWordPair } from '../../utils';
 import { GameSessionContext } from '../context/GameSessionContext';
 import { useSavedDeckLibrary } from '../hooks/useSavedDeckLibrary';
@@ -15,8 +20,9 @@ export function GameSessionProvider({ children }: PropsWithChildren) {
     wordStatistics,
     isWordStatisticsLoading,
     wordStatisticsError,
+    wordMasteries,
     refreshWordStatistics,
-    saveCompletedGameStatistics,
+    saveAssessmentStatistics,
   } = useWordStatisticsLibrary();
 
   const updateDraft = useCallback((update: Partial<GameSession>) => {
@@ -68,26 +74,42 @@ export function GameSessionProvider({ children }: PropsWithChildren) {
   );
 
   const startGameSession = useCallback(
-    async (savedDeckId?: string) => {
+    async ({ deckName, savedDeckId }: StartGameSessionOptions) => {
       const sessionPairs = cloneWordPairs(draft.pairs);
       const isCompleteDeck =
         sessionPairs.length === draft.deckSize && sessionPairs.every(isCompleteWordPair);
 
-      if (isCompleteDeck) {
-        const persistedSavedDeckId = await saveDeck(sessionPairs, savedDeckId);
-
-        await refreshWordStatistics();
-
-        setSession({
-          ...draft,
-          pairs: sessionPairs,
-          savedDeckId: persistedSavedDeckId,
-        });
-
-        return;
+      if (!isCompleteDeck || !deckName.trim()) {
+        return { status: StartGameSessionStatus.InvalidDeck, savedDeckId: null };
       }
 
-      setSession({ ...draft, pairs: sessionPairs });
+      const persistenceResult = await saveDeck({
+        name: deckName,
+        pairs: sessionPairs,
+        savedDeckId,
+      });
+
+      if (persistenceResult.status === SavedDeckPersistenceStatus.DuplicateDeck) {
+        return { status: StartGameSessionStatus.DuplicateDeck, savedDeckId: null };
+      } else if (
+        persistenceResult.status !== SavedDeckPersistenceStatus.Saved ||
+        !persistenceResult.savedDeckId
+      ) {
+        return { status: StartGameSessionStatus.SaveFailed, savedDeckId: null };
+      }
+
+      await refreshWordStatistics();
+
+      setSession({
+        ...draft,
+        pairs: sessionPairs,
+        savedDeckId: persistenceResult.savedDeckId,
+      });
+
+      return {
+        status: StartGameSessionStatus.Started,
+        savedDeckId: persistenceResult.savedDeckId,
+      };
     },
     [draft, refreshWordStatistics, saveDeck],
   );
@@ -113,6 +135,7 @@ export function GameSessionProvider({ children }: PropsWithChildren) {
       isSavedDeckLibraryLoading,
       savedDeckLibraryError,
       wordStatistics,
+      wordMasteries,
       isWordStatisticsLoading,
       wordStatisticsError,
       updateDraft,
@@ -120,7 +143,7 @@ export function GameSessionProvider({ children }: PropsWithChildren) {
       removeSavedDeck,
       startSavedDeckGame,
       startGameSession,
-      saveCompletedGameStatistics,
+      saveAssessmentStatistics,
     }),
     [
       draft,
@@ -130,12 +153,13 @@ export function GameSessionProvider({ children }: PropsWithChildren) {
       reuseSavedDeck,
       removeSavedDeck,
       savedDecks,
-      saveCompletedGameStatistics,
+      saveAssessmentStatistics,
       session,
       startSavedDeckGame,
       startGameSession,
       updateDraft,
       wordStatistics,
+      wordMasteries,
       wordStatisticsError,
     ],
   );

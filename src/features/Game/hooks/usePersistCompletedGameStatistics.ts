@@ -1,37 +1,77 @@
 import { useEffect, useRef } from 'react';
 
-import { CompletedWordStatistic } from '@/features/GameSession/types';
+import {
+  CompletedAssessmentStatistic,
+  PersistAssessmentOptions,
+} from '@/features/GameSession/types';
 
-import { GameStage } from '../types';
+import { CompletedGameResult, FocusedReviewState } from '../types';
 
 type UsePersistCompletedGameStatisticsOptions = {
-  gameStage: GameStage;
   savedDeckId: string | null;
-  completedWordStatistics: CompletedWordStatistic[];
-  saveCompletedGameStatistics: (
-    savedDeckId: string,
-    completedWordStatistics: CompletedWordStatistic[],
-  ) => Promise<boolean>;
+  gameResult: CompletedGameResult | null;
+  focusedReviewState: FocusedReviewState;
+  focusedReviewAssessmentStatistics: CompletedAssessmentStatistic[];
+  focusedReviewWordStatistics: CompletedAssessmentStatistic[];
+  saveAssessmentStatistics: (options: PersistAssessmentOptions) => Promise<boolean>;
 };
 
 export function usePersistCompletedGameStatistics({
-  gameStage,
   savedDeckId,
-  completedWordStatistics,
-  saveCompletedGameStatistics,
+  gameResult,
+  focusedReviewState,
+  focusedReviewAssessmentStatistics,
+  focusedReviewWordStatistics,
+  saveAssessmentStatistics,
 }: UsePersistCompletedGameStatisticsOptions) {
-  const hasPersistedCompletedGame = useRef(false);
+  const hasPersistedPrimaryAssessment = useRef(false);
+  const hasPersistedFocusedReviewAssessment = useRef(false);
+
+  useEffect(() => {
+    if (!savedDeckId || !gameResult || hasPersistedPrimaryAssessment.current) {
+      return;
+    }
+
+    hasPersistedPrimaryAssessment.current = true;
+    void saveAssessmentStatistics({
+      savedDeckId,
+      completedWordStatistics: gameResult.completedWordStatistics,
+      assessmentStatistics: gameResult.assessmentStatistics,
+      seenWordPairIds: gameResult.completedWordStatistics
+        .filter((statistic) => statistic.totalAttemptCount > 0)
+        .map((statistic) => statistic.wordPairId),
+      missedWordPairIds: gameResult.missedWordPairIds,
+      updateBestStatistics: true,
+    });
+  }, [gameResult, saveAssessmentStatistics, savedDeckId]);
 
   useEffect(() => {
     if (
-      gameStage !== GameStage.LearningStatistics ||
       !savedDeckId ||
-      hasPersistedCompletedGame.current
+      focusedReviewState !== FocusedReviewState.Complete ||
+      hasPersistedFocusedReviewAssessment.current
     ) {
       return;
     }
 
-    hasPersistedCompletedGame.current = true;
-    void saveCompletedGameStatistics(savedDeckId, completedWordStatistics);
-  }, [completedWordStatistics, gameStage, saveCompletedGameStatistics, savedDeckId]);
+    hasPersistedFocusedReviewAssessment.current = true;
+    void saveAssessmentStatistics({
+      savedDeckId,
+      completedWordStatistics: [],
+      assessmentStatistics: focusedReviewAssessmentStatistics,
+      seenWordPairIds: focusedReviewWordStatistics
+        .filter((statistic) => statistic.totalAttemptCount > 0)
+        .map((statistic) => statistic.wordPairId),
+      missedWordPairIds: focusedReviewWordStatistics
+        .filter((statistic) => statistic.correctAttemptCount < statistic.totalAttemptCount)
+        .map((statistic) => statistic.wordPairId),
+      updateBestStatistics: false,
+    });
+  }, [
+    focusedReviewAssessmentStatistics,
+    focusedReviewState,
+    focusedReviewWordStatistics,
+    saveAssessmentStatistics,
+    savedDeckId,
+  ]);
 }

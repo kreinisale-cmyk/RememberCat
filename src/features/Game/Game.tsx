@@ -21,6 +21,7 @@ import {
   PRACTICE_ROUND_TITLE,
 } from './constants';
 import { useMatchingGame } from './hooks/useMatchingGame/useMatchingGame';
+import { useGameFeedback } from './hooks/useGameFeedback/useGameFeedback';
 import { usePersistCompletedGameStatistics } from './hooks/usePersistCompletedGameStatistics';
 import { styles } from './styles';
 import { GameStage } from './types';
@@ -32,14 +33,25 @@ import {
 } from './utils';
 
 export function Game() {
-  const { session, saveCompletedGameStatistics } = useGameSession();
-  const matchingGame = useMatchingGame(session);
+  const { session, wordMasteries, saveAssessmentStatistics } = useGameSession();
+  const matchingGame = useMatchingGame(session, wordMasteries);
+
+  const gameFeedback = useGameFeedback({
+    hasActiveSession: session !== null,
+    gameStage: matchingGame.gameStage,
+    preparationWordIndex: matchingGame.preparationWordIndex,
+    matchFeedback: matchingGame.matchFeedback,
+    reinforcementFeedback: matchingGame.reinforcementFeedback,
+    finalQuizFeedback: matchingGame.finalQuizFeedback,
+  });
 
   usePersistCompletedGameStatistics({
-    gameStage: matchingGame.gameStage,
     savedDeckId: session?.savedDeckId ?? null,
-    completedWordStatistics: matchingGame.completedWordStatistics,
-    saveCompletedGameStatistics,
+    gameResult: matchingGame.gameResult,
+    focusedReviewState: matchingGame.focusedReviewState,
+    focusedReviewAssessmentStatistics: matchingGame.focusedReviewAssessmentStatistics,
+    focusedReviewWordStatistics: matchingGame.focusedReviewWordStatistics,
+    saveAssessmentStatistics,
   });
 
   if (!session) {
@@ -81,12 +93,14 @@ export function Game() {
       if (matchingGame.currentPreparationWordPair) {
         gameStageContent = (
           <PreparationSession
-            key={matchingGame.currentPreparationWordPair.id}
             wordPair={matchingGame.currentPreparationWordPair}
+            wordPairs={session.pairs}
             currentWordNumber={matchingGame.preparationWordIndex + 1}
             totalWordCount={matchingGame.preparationWordCount}
             onAcknowledge={matchingGame.acknowledgePreparationWord}
             onClose={leaveGame}
+            onSkip={matchingGame.skipPreparation}
+            onWordLanded={gameFeedback.announcePreparationWordLearned}
           />
         );
       } else {
@@ -170,24 +184,26 @@ export function Game() {
           />
         );
       } else {
-        gameStageContent = (
+        gameStageContent = matchingGame.gameResult ? (
           <LearningStatistics
-            learningStatistics={matchingGame.learningStatistics}
-            practicePairCount={matchingGame.practicePairCount}
+            result={matchingGame.gameResult}
+            focusedReviewState={matchingGame.focusedReviewState}
+            onReviewMissedWords={matchingGame.startFocusedReview}
             onReturnToSetup={returnToGameSetup}
           />
-        );
+        ) : null;
       }
       break;
 
     case GameStage.LearningStatistics:
-      gameStageContent = (
+      gameStageContent = matchingGame.gameResult ? (
         <LearningStatistics
-          learningStatistics={matchingGame.learningStatistics}
-          practicePairCount={matchingGame.practicePairCount}
+          result={matchingGame.gameResult}
+          focusedReviewState={matchingGame.focusedReviewState}
+          onReviewMissedWords={matchingGame.startFocusedReview}
           onReturnToSetup={returnToGameSetup}
         />
-      );
+      ) : null;
       break;
 
     case GameStage.MainRound:

@@ -3,7 +3,8 @@ import { useCallback } from 'react';
 import { WordPair } from '@/features/GameSession/types';
 
 import { WORD_PAIR_FILE_TYPES } from '../constants';
-import { parseWordPairFile } from '../utils';
+import { WordPairAdditionSource } from '../types';
+import { createWordPairAdditionMessage, parseWordPairFile, selectUniqueWordPairs } from '../utils';
 
 type UseImportWordPairsOptions = {
   pairs: WordPair[];
@@ -32,13 +33,19 @@ export function useImportWordPairs({
       const file = new File(result.assets[0].uri);
       const importedPairs = parseWordPairFile(await file.text());
       const availableSlots = wordPairLimit - pairs.length;
-      const pairsToAdd = importedPairs.slice(0, availableSlots);
+      const { acceptedPairs, skippedPairCount } = selectUniqueWordPairs(
+        pairs,
+        importedPairs,
+        availableSlots,
+      );
 
-      setDraftPairs([...pairsToAdd, ...pairs]);
+      setDraftPairs([...acceptedPairs, ...pairs]);
       setImportMessage(
-        pairsToAdd.length
-          ? `Imported ${pairsToAdd.length} word pair${pairsToAdd.length === 1 ? '' : 's'}.`
-          : 'No valid word - translation pairs found.',
+        createWordPairAdditionMessage(
+          WordPairAdditionSource.Import,
+          acceptedPairs.length,
+          skippedPairCount,
+        ),
       );
     } catch {
       setImportMessage('Rebuild the Android app once to enable local file importing.');

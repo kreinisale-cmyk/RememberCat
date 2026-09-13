@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { AppPreferencesProvider } from '@/features/AppPreferences/useAppPreferences/provider/AppPreferencesProvider';
 import { GameSessionProvider } from '@/features/GameSession/useGameSession/provider/GameSessionProvider';
 
 SplashScreen.preventAutoHideAsync();
@@ -24,11 +25,13 @@ export default function RootLayout() {
   }
 
   return (
-    <GameSessionProvider>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <AnimatedSplashOverlay />
-        <Stack screenOptions={{ headerShown: false }} />
-      </ThemeProvider>
-    </GameSessionProvider>
+    <AppPreferencesProvider>
+      <GameSessionProvider>
+        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+          <AnimatedSplashOverlay />
+          <Stack screenOptions={{ headerShown: false }} />
+        </ThemeProvider>
+      </GameSessionProvider>
+    </AppPreferencesProvider>
   );
 }

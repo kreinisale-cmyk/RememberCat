@@ -1,14 +1,21 @@
 import {
+  AttemptCount,
+  CompletedAssessmentStatistic,
   CompletedWordStatistic,
   FocusMode,
+  GameAttemptPhase,
   GameSession,
   MatchMode,
   WordAttemptStatistic,
   WordPair,
+  WordMastery,
 } from '@/features/GameSession/types';
+import { applyAssessmentToWordMastery, createNewWordMastery } from '@/features/GameSession/utils';
 
 import {
   FinalQuizAnswerChoice,
+  CompletedGameResult,
+  FocusedReviewState,
   GameBoardPair,
   GameStage,
   MatchCelebrationAnimation,
@@ -45,6 +52,19 @@ export function createEmptySelectedBoardPair(): SelectedBoardPair {
 
 export function isMatchingGameStage(gameStage: GameStage) {
   return gameStage === GameStage.MainRound || gameStage === GameStage.DifficultWordsPractice;
+}
+
+export function selectMatchingAttemptPhase(
+  gameStage: GameStage,
+  focusedReviewState: FocusedReviewState,
+) {
+  if (gameStage === GameStage.MainRound) {
+    return GameAttemptPhase.MainChallenge;
+  } else if (focusedReviewState === FocusedReviewState.Practice) {
+    return GameAttemptPhase.FocusedReviewPractice;
+  }
+
+  return GameAttemptPhase.DifficultPractice;
 }
 
 export function shuffle<T>(items: T[], generateRandomNumber: RandomNumberGenerator = Math.random) {
@@ -398,20 +418,43 @@ export function createInitialMismatchStatistics(wordPairs: WordPair[]) {
 export function createInitialWordAttemptStatistics(wordPairs: WordPair[]) {
   return wordPairs.map<WordAttemptStatistic>((wordPair) => ({
     wordPairId: wordPair.id,
-    correctAttemptCount: 0,
-    incorrectAttemptCount: 0,
+    attemptsByPhase: createEmptyAttemptsByPhase(),
   }));
+}
+
+export function createEmptyAttemptsByPhase(): Record<GameAttemptPhase, AttemptCount> {
+  return {
+    [GameAttemptPhase.GuidedReinforcement]: createEmptyAttemptCount(),
+    [GameAttemptPhase.MainChallenge]: createEmptyAttemptCount(),
+    [GameAttemptPhase.DifficultPractice]: createEmptyAttemptCount(),
+    [GameAttemptPhase.FinalQuiz]: createEmptyAttemptCount(),
+    [GameAttemptPhase.FocusedReviewPractice]: createEmptyAttemptCount(),
+    [GameAttemptPhase.FocusedReviewQuiz]: createEmptyAttemptCount(),
+  };
+}
+
+function createEmptyAttemptCount(): AttemptCount {
+  return { correctAttemptCount: 0, incorrectAttemptCount: 0 };
 }
 
 export function incrementWordCorrectAttempt(
   wordAttemptStatistics: WordAttemptStatistic[],
   wordPairId: string,
+  phase: GameAttemptPhase,
 ) {
   return wordAttemptStatistics.map((wordStatistic) => {
     if (wordStatistic.wordPairId === wordPairId) {
+      const phaseAttempts = wordStatistic.attemptsByPhase[phase];
+
       return {
         ...wordStatistic,
-        correctAttemptCount: wordStatistic.correctAttemptCount + 1,
+        attemptsByPhase: {
+          ...wordStatistic.attemptsByPhase,
+          [phase]: {
+            ...phaseAttempts,
+            correctAttemptCount: phaseAttempts.correctAttemptCount + 1,
+          },
+        },
       };
     }
 
@@ -422,12 +465,21 @@ export function incrementWordCorrectAttempt(
 export function incrementWordIncorrectAttempt(
   wordAttemptStatistics: WordAttemptStatistic[],
   wordPairId: string,
+  phase: GameAttemptPhase,
 ) {
   return wordAttemptStatistics.map((wordStatistic) => {
     if (wordStatistic.wordPairId === wordPairId) {
+      const phaseAttempts = wordStatistic.attemptsByPhase[phase];
+
       return {
         ...wordStatistic,
-        incorrectAttemptCount: wordStatistic.incorrectAttemptCount + 1,
+        attemptsByPhase: {
+          ...wordStatistic.attemptsByPhase,
+          [phase]: {
+            ...phaseAttempts,
+            incorrectAttemptCount: phaseAttempts.incorrectAttemptCount + 1,
+          },
+        },
       };
     }
 
@@ -437,20 +489,172 @@ export function incrementWordIncorrectAttempt(
 
 export function createCompletedWordStatistics(wordAttemptStatistics: WordAttemptStatistic[]) {
   return wordAttemptStatistics.map<CompletedWordStatistic>((wordStatistic) => {
-    const totalAttemptCount =
-      wordStatistic.correctAttemptCount + wordStatistic.incorrectAttemptCount;
+    const phaseAttempts = Object.values(wordStatistic.attemptsByPhase);
+    const correctAttemptCount = phaseAttempts.reduce(
+      (total, attemptCount) => total + attemptCount.correctAttemptCount,
+      0,
+    );
+    const incorrectAttemptCount = phaseAttempts.reduce(
+      (total, attemptCount) => total + attemptCount.incorrectAttemptCount,
+      0,
+    );
+    const totalAttemptCount = correctAttemptCount + incorrectAttemptCount;
     const accuracy =
-      totalAttemptCount > 0
-        ? Math.round((wordStatistic.correctAttemptCount / totalAttemptCount) * 100)
-        : 0;
+      totalAttemptCount > 0 ? Math.round((correctAttemptCount / totalAttemptCount) * 100) : 0;
 
     return {
       wordPairId: wordStatistic.wordPairId,
-      correctAttemptCount: wordStatistic.correctAttemptCount,
+      correctAttemptCount,
       totalAttemptCount,
       accuracy,
     };
   });
+}
+
+export function createCompletedAssessmentStatistics(
+  wordAttemptStatistics: WordAttemptStatistic[],
+  assessmentPhases: GameAttemptPhase[],
+) {
+  return wordAttemptStatistics.map<CompletedAssessmentStatistic>((wordStatistic) => {
+    const phaseAttempts = assessmentPhases.map(
+      (assessmentPhase) => wordStatistic.attemptsByPhase[assessmentPhase],
+    );
+    const correctAttemptCount = phaseAttempts.reduce(
+      (total, attemptCount) => total + attemptCount.correctAttemptCount,
+      0,
+    );
+    const incorrectAttemptCount = phaseAttempts.reduce(
+      (total, attemptCount) => total + attemptCount.incorrectAttemptCount,
+      0,
+    );
+    const totalAttemptCount = correctAttemptCount + incorrectAttemptCount;
+
+    return {
+      wordPairId: wordStatistic.wordPairId,
+      correctAttemptCount,
+      totalAttemptCount,
+      accuracy:
+        totalAttemptCount > 0 ? Math.round((correctAttemptCount / totalAttemptCount) * 100) : 0,
+    };
+  });
+}
+
+export function selectMissedWordPairIds(wordAttemptStatistics: WordAttemptStatistic[]) {
+  return wordAttemptStatistics.flatMap((wordStatistic) => {
+    const hasIncorrectAttempt = Object.values(wordStatistic.attemptsByPhase).some(
+      (attemptCount) => attemptCount.incorrectAttemptCount > 0,
+    );
+
+    return hasIncorrectAttempt ? [wordStatistic.wordPairId] : [];
+  });
+}
+
+export function createCompletedGameResult(
+  savedDeckId: string,
+  wordPairs: WordPair[],
+  learningStatistics: WordPairLearningStatistics[],
+  wordAttemptStatistics: WordAttemptStatistic[],
+  wordMasteries: WordMastery[],
+  completedAt: number,
+): CompletedGameResult {
+  const completedWordStatistics = createCompletedWordStatistics(wordAttemptStatistics);
+  const assessmentStatistics = createCompletedAssessmentStatistics(wordAttemptStatistics, [
+    GameAttemptPhase.MainChallenge,
+    GameAttemptPhase.FinalQuiz,
+  ]);
+  const missedWordPairIds = selectMissedWordPairIds(wordAttemptStatistics);
+  const completedStatisticsByWordPairId = new Map(
+    completedWordStatistics.map((statistic) => [statistic.wordPairId, statistic]),
+  );
+  const assessmentStatisticsByWordPairId = new Map(
+    assessmentStatistics.map((statistic) => [statistic.wordPairId, statistic]),
+  );
+  const masteryByWordPairId = new Map(
+    wordMasteries
+      .filter((mastery) => mastery.savedDeckId === savedDeckId)
+      .map((mastery) => [mastery.wordPairId, mastery]),
+  );
+  const assessmentCorrectAttemptCount = assessmentStatistics.reduce(
+    (total, statistic) => total + statistic.correctAttemptCount,
+    0,
+  );
+  const assessmentTotalAttemptCount = assessmentStatistics.reduce(
+    (total, statistic) => total + statistic.totalAttemptCount,
+    0,
+  );
+
+  return {
+    completedAt,
+    assessmentAccuracy:
+      assessmentTotalAttemptCount > 0
+        ? Math.round((assessmentCorrectAttemptCount / assessmentTotalAttemptCount) * 100)
+        : 0,
+    assessmentCorrectAttemptCount,
+    assessmentIncorrectAttemptCount: assessmentTotalAttemptCount - assessmentCorrectAttemptCount,
+    totalIncorrectAttemptCount: completedWordStatistics.reduce(
+      (total, statistic) => total + statistic.totalAttemptCount - statistic.correctAttemptCount,
+      0,
+    ),
+    missedWordPairIds,
+    completedWordStatistics,
+    assessmentStatistics,
+    learningStatistics,
+    wordResults: wordPairs.map((wordPair) => {
+      const completedStatistic = completedStatisticsByWordPairId.get(wordPair.id);
+      const assessmentStatistic = assessmentStatisticsByWordPairId.get(wordPair.id) ?? {
+        wordPairId: wordPair.id,
+        correctAttemptCount: 0,
+        totalAttemptCount: 0,
+        accuracy: 0,
+      };
+      const masteryBefore =
+        masteryByWordPairId.get(wordPair.id) ?? createNewWordMastery(savedDeckId, wordPair.id);
+
+      return {
+        wordPair,
+        correctAttemptCount: completedStatistic?.correctAttemptCount ?? 0,
+        incorrectAttemptCount: completedStatistic
+          ? completedStatistic.totalAttemptCount - completedStatistic.correctAttemptCount
+          : 0,
+        assessmentCorrectAttemptCount: assessmentStatistic.correctAttemptCount,
+        assessmentIncorrectAttemptCount:
+          assessmentStatistic.totalAttemptCount - assessmentStatistic.correctAttemptCount,
+        assessmentAccuracy: assessmentStatistic.accuracy,
+        masteryBefore,
+        masteryAfter: applyAssessmentToWordMastery(masteryBefore, assessmentStatistic, completedAt),
+      };
+    }),
+  };
+}
+
+export function applyFocusedReviewToGameResult(
+  result: CompletedGameResult,
+  reviewAssessmentStatistics: CompletedAssessmentStatistic[],
+  completedAt: number,
+) {
+  const reviewStatisticByWordPairId = new Map(
+    reviewAssessmentStatistics.map((statistic) => [statistic.wordPairId, statistic]),
+  );
+
+  return {
+    ...result,
+    wordResults: result.wordResults.map((wordResult) => {
+      const reviewStatistic = reviewStatisticByWordPairId.get(wordResult.wordPair.id);
+
+      if (!reviewStatistic || reviewStatistic.totalAttemptCount === 0) {
+        return wordResult;
+      }
+
+      return {
+        ...wordResult,
+        masteryAfter: applyAssessmentToWordMastery(
+          wordResult.masteryAfter,
+          reviewStatistic,
+          completedAt,
+        ),
+      };
+    }),
+  };
 }
 
 export function incrementWordPairMismatchCount(

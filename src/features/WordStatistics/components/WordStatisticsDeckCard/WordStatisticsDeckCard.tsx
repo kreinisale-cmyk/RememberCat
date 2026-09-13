@@ -3,6 +3,7 @@ import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { RememberCatColors } from '@/constants/theme';
+import { MasteryLevel } from '@/features/GameSession/types';
 
 import {
   ACCURACY_SUFFIX,
@@ -13,10 +14,12 @@ import {
 import { styles } from './styles';
 import { WordStatisticsDeckCardProps } from './types';
 import { createWordStatisticKey } from '../../utils';
+import { createMasteryLabel } from './utils';
 
 export function WordStatisticsDeckCard({
   savedDeck,
   statisticLookup,
+  masteryLookup,
 }: WordStatisticsDeckCardProps) {
   return (
     <View style={styles.card}>
@@ -37,6 +40,8 @@ export function WordStatisticsDeckCard({
           const wordStatistic = statisticLookup.get(
             createWordStatisticKey(savedDeck.id, wordPair.id),
           );
+          const wordMastery = masteryLookup.get(createWordStatisticKey(savedDeck.id, wordPair.id));
+          const masteryLevel = wordMastery?.level ?? MasteryLevel.New;
 
           if (!wordStatistic) {
             return (
@@ -49,7 +54,10 @@ export function WordStatisticsDeckCard({
                     {wordPair.translation}
                   </ThemedText>
                 </View>
-                <ThemedText style={styles.unplayed}>{NOT_PRACTICED_LABEL}</ThemedText>
+                <View style={styles.unplayedMetrics}>
+                  <ThemedText style={styles.mastery}>{createMasteryLabel(masteryLevel)}</ThemedText>
+                  <ThemedText style={styles.unplayed}>{NOT_PRACTICED_LABEL}</ThemedText>
+                </View>
               </View>
             );
           }
@@ -69,6 +77,7 @@ export function WordStatisticsDeckCard({
                   </ThemedText>
                 </View>
                 <View style={styles.metricCopy}>
+                  <ThemedText style={styles.mastery}>{createMasteryLabel(masteryLevel)}</ThemedText>
                   <ThemedText style={styles.accuracy}>
                     {Math.round(wordStatistic.bestAccuracy)}
                     {ACCURACY_SUFFIX}

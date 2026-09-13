@@ -1,60 +1,98 @@
-import { useEffect, useRef } from 'react';
-import { Animated, Pressable, View } from 'react-native';
+import X from 'lucide-react-native/icons/x';
+import { useRef } from 'react';
+import { Alert, Animated, Pressable, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
+import { RememberCatColors } from '@/constants/theme';
 
+import { FlyingPreparationCard } from './components/FlyingPreparationCard/FlyingPreparationCard';
+import { PreparationWordCard } from './components/PreparationWordCard/PreparationWordCard';
+import { PreparationWordGrid } from './components/PreparationWordGrid/PreparationWordGrid';
+import { PreparationWordGridHandle } from './components/PreparationWordGrid/types';
 import {
-  ACKNOWLEDGE_LABEL,
-  FINAL_ACKNOWLEDGE_LABEL,
+  CONFIRM_SKIP_TRAINING_LABEL,
+  KEEP_TRAINING_LABEL,
   PREPARATION_CLOSE_ACCESSIBILITY_LABEL,
-  PREPARATION_ENTRANCE_DISTANCE,
   PREPARATION_HINT,
   PREPARATION_KICKER,
-  PREPARATION_SPRING_DAMPING,
-  PREPARATION_SPRING_STIFFNESS,
   PREPARATION_TITLE,
-  TRANSLATION_LABEL,
-  WORD_LABEL,
+  SKIP_TRAINING_CONFIRM_MESSAGE,
+  SKIP_TRAINING_CONFIRM_TITLE,
+  SKIP_TRAINING_LABEL,
 } from './constants';
+import { usePreparationLandingAnimation } from './hooks/usePreparationLandingAnimation';
 import { styles } from './styles';
-import { PreparationSessionProps } from './types';
-import { createPreparationProgressLabel, isFinalPreparationWord } from './utils';
+import { PreparationAnimationPhase, PreparationSessionProps } from './types';
+import {
+  createPreparationProgressLabel,
+  getPreparedWordCount,
+  isFinalPreparationWord,
+} from './utils';
 
 export function PreparationSession({
   wordPair,
+  wordPairs,
   currentWordNumber,
   totalWordCount,
   onAcknowledge,
   onClose,
+  onSkip,
+  onWordLanded,
 }: PreparationSessionProps) {
-  const entranceAnimation = useRef(new Animated.Value(0)).current;
+  const rootRef = useRef<View>(null);
+  const cardRef = useRef<View>(null);
+  const gridRef = useRef<PreparationWordGridHandle>(null);
+  const flyingWordPairRef = useRef(wordPair);
+  const currentWordIndex = currentWordNumber - 1;
   const progress = currentWordNumber / totalWordCount;
   const isFinalWord = isFinalPreparationWord(currentWordNumber, totalWordCount);
-
-  useEffect(() => {
-    Animated.spring(entranceAnimation, {
-      toValue: 1,
-      damping: PREPARATION_SPRING_DAMPING,
-      stiffness: PREPARATION_SPRING_STIFFNESS,
-      useNativeDriver: true,
-    }).start();
-  }, [entranceAnimation, wordPair.id]);
-
-  const cardTranslateX = entranceAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [PREPARATION_ENTRANCE_DISTANCE, 0],
+  const preparationAnimation = usePreparationLandingAnimation({
+    cardRef,
+    currentWordIndex,
+    gridRef,
+    isFinalWord,
+    onAcknowledge,
+    onWordLanded,
+    rootRef,
+    wordPairId: wordPair.id,
   });
+  const preparedWordCount = getPreparedWordCount(
+    currentWordNumber,
+    preparationAnimation.isCurrentWordLanded,
+  );
+
+  function closePreparation() {
+    preparationAnimation.cancelAnimation();
+    onClose();
+  }
+
+  function acknowledgeWord() {
+    flyingWordPairRef.current = wordPair;
+    preparationAnimation.acknowledgeWord();
+  }
+
+  function skipTraining() {
+    preparationAnimation.cancelAnimation();
+    onSkip();
+  }
+
+  function confirmSkipTraining() {
+    Alert.alert(SKIP_TRAINING_CONFIRM_TITLE, SKIP_TRAINING_CONFIRM_MESSAGE, [
+      { text: KEEP_TRAINING_LABEL, style: 'cancel' },
+      { text: CONFIRM_SKIP_TRAINING_LABEL, onPress: skipTraining },
+    ]);
+  }
 
   return (
-    <View style={styles.content}>
+    <View ref={rootRef} style={styles.content}>
       <View style={styles.top}>
         <Pressable
-          accessibilityRole="button"
           accessibilityLabel={PREPARATION_CLOSE_ACCESSIBILITY_LABEL}
-          onPress={onClose}
-          style={styles.closeButton}
+          accessibilityRole="button"
+          onPress={closePreparation}
+          style={({ pressed }) => [styles.closeButton, pressed && styles.closeButtonPressed]}
         >
-          <ThemedText style={styles.close}>×</ThemedText>
+          <X color={RememberCatColors.mutedForeground} size={20} strokeWidth={2.4} />
         </Pressable>
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
@@ -62,47 +100,61 @@ export function PreparationSession({
         <ThemedText style={styles.progressLabel}>
           {createPreparationProgressLabel(currentWordNumber, totalWordCount)}
         </ThemedText>
+        <Pressable
+          accessibilityRole="button"
+          onPress={confirmSkipTraining}
+          style={({ pressed }) => [styles.skipButton, pressed && styles.skipButtonPressed]}
+        >
+          <ThemedText style={styles.skipButtonText}>{SKIP_TRAINING_LABEL}</ThemedText>
+        </Pressable>
       </View>
+
       <View accessibilityRole="header" style={styles.heading}>
         <ThemedText style={styles.kicker}>{PREPARATION_KICKER}</ThemedText>
         <ThemedText style={styles.title}>{PREPARATION_TITLE}</ThemedText>
         <ThemedText style={styles.hint}>{PREPARATION_HINT}</ThemedText>
       </View>
-      <View style={styles.cardArea}>
-        <Animated.View
-          key={wordPair.id}
-          style={[
-            styles.card,
-            {
-              opacity: entranceAnimation,
-              transform: [{ translateX: cardTranslateX }, { scale: entranceAnimation }],
-            },
-          ]}
-        >
-          <View pointerEvents="none" style={styles.cardDecoration} />
-          <View style={styles.vocabulary}>
-            <ThemedText style={styles.fieldLabel}>{WORD_LABEL}</ThemedText>
-            <ThemedText adjustsFontSizeToFit numberOfLines={2} style={styles.word}>
-              {wordPair.word}
-            </ThemedText>
-            <View style={styles.divider} />
-            <ThemedText style={styles.fieldLabel}>{TRANSLATION_LABEL}</ThemedText>
-            <ThemedText adjustsFontSizeToFit numberOfLines={3} style={styles.translation}>
-              {wordPair.translation}
-            </ThemedText>
-          </View>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onAcknowledge}
-            style={styles.acknowledgeButton}
-          >
-            <ThemedText style={styles.acknowledgeText}>
-              {isFinalWord ? FINAL_ACKNOWLEDGE_LABEL : ACKNOWLEDGE_LABEL}
-            </ThemedText>
-            <ThemedText style={styles.acknowledgeIcon}>✓</ThemedText>
-          </Pressable>
-        </Animated.View>
+
+      <View style={styles.gridArea}>
+        <PreparationWordGrid
+          ref={gridRef}
+          activeIndex={currentWordIndex}
+          preparedWordCount={preparedWordCount}
+          wordPairs={wordPairs}
+        />
       </View>
+
+      {preparationAnimation.isOverlayVisible ? (
+        <View style={styles.overlay}>
+          {preparationAnimation.isSourceVisible ? (
+            <Animated.View
+              style={[
+                styles.sourceCardWrapper,
+                { opacity: preparationAnimation.sourceCardOpacity },
+              ]}
+            >
+              <PreparationWordCard
+                ref={cardRef}
+                isDisabled={preparationAnimation.isInteractionDisabled}
+                isFinalWord={isFinalWord}
+                onAcknowledge={acknowledgeWord}
+                wordPair={wordPair}
+              />
+            </Animated.View>
+          ) : null}
+        </View>
+      ) : null}
+
+      {preparationAnimation.phase === PreparationAnimationPhase.Flying &&
+      preparationAnimation.landingLayouts ? (
+        <View pointerEvents="none" style={styles.flyingLayer}>
+          <FlyingPreparationCard
+            layouts={preparationAnimation.landingLayouts}
+            progress={preparationAnimation.flightProgress}
+            wordPair={flyingWordPairRef.current}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }

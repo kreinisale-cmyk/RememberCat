@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LayoutAnimation } from 'react-native';
 
-import { GameSession, MatchMode, WordPair } from '@/features/GameSession/types';
+import {
+  GameAttemptPhase,
+  GameSession,
+  MatchMode,
+  WordMastery,
+  WordPair,
+} from '@/features/GameSession/types';
 
 import {
   CHALLENGE_STAGE_MATCH_GOAL,
@@ -25,6 +31,7 @@ import {
 import {
   FinalQuizAnswerChoice,
   FinalQuizFeedback,
+  FocusedReviewState,
   GameStage,
   MatchCelebrationAnimation,
   MatchFeedback,
@@ -39,6 +46,9 @@ import {
   arrangeRemainingWordBoard,
   arrangeWordBoardAfterReplacement,
   createEmptySelectedBoardPair,
+  applyFocusedReviewToGameResult,
+  createCompletedAssessmentStatistics,
+  createCompletedGameResult,
   createCompletedWordStatistics,
   createFinalQuizAnswerChoices,
   createGameBoardPair,
@@ -63,6 +73,7 @@ import {
   replaceGameBoardPair,
   reshuffleReinforcementAnswerChoices,
   selectDifficultWordPairs,
+  selectMatchingAttemptPhase,
   selectNextMatchCelebrationAnimation,
   selectNextUniquePracticeWordPair,
   shuffle,
@@ -70,7 +81,10 @@ import {
 } from '../../utils';
 import { UseMatchingGameResult } from './types';
 
-export function useMatchingGame(session: GameSession | null): UseMatchingGameResult {
+export function useMatchingGame(
+  session: GameSession | null,
+  wordMasteries: WordMastery[],
+): UseMatchingGameResult {
   const isTimedMainRound = isChallengeTimed(session);
   const challengeStageDurationSeconds = getChallengeStageDurationSeconds();
   const [gameStage, setGameStage] = useState(GameStage.Preparation);
@@ -136,6 +150,10 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
   const [finalQuizFeedback, setFinalQuizFeedback] = useState(FinalQuizFeedback.None);
   const [selectedFinalQuizAnswerId, setSelectedFinalQuizAnswerId] = useState<string | null>(null);
   const finalQuizFeedbackTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [focusedReviewState, setFocusedReviewState] = useState(FocusedReviewState.Unavailable);
+  const [primaryGameResult, setPrimaryGameResult] =
+    useState<UseMatchingGameResult['gameResult']>(null);
+  const [gameResult, setGameResult] = useState<UseMatchingGameResult['gameResult']>(null);
 
   const practicedWordPairIds = useMemo(
     () => new Set(difficultWordPairs.map((wordPair) => wordPair.id)),
@@ -147,6 +165,21 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
   );
   const completedWordStatistics = useMemo(
     () => createCompletedWordStatistics(wordAttemptStatistics),
+    [wordAttemptStatistics],
+  );
+  const focusedReviewAssessmentStatistics = useMemo(
+    () =>
+      createCompletedAssessmentStatistics(wordAttemptStatistics, [
+        GameAttemptPhase.FocusedReviewQuiz,
+      ]),
+    [wordAttemptStatistics],
+  );
+  const focusedReviewWordStatistics = useMemo(
+    () =>
+      createCompletedAssessmentStatistics(wordAttemptStatistics, [
+        GameAttemptPhase.FocusedReviewPractice,
+        GameAttemptPhase.FocusedReviewQuiz,
+      ]),
     [wordAttemptStatistics],
   );
   const currentPreparationWordPair = session?.pairs[preparationWordIndex] ?? null;
@@ -161,6 +194,49 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
   const currentFinalQuizQuestion = finalQuizWordPairs[currentFinalQuizQuestionIndex] ?? null;
   const passedFinalQuizWordPairCount = currentFinalQuizQuestionIndex;
   const finalQuizWordPairCount = finalQuizWordPairs.length;
+
+  useEffect(() => {
+    if (gameStage !== GameStage.LearningStatistics || !session) {
+      return;
+    }
+
+    if (!primaryGameResult) {
+      const completedResult = createCompletedGameResult(
+        session.savedDeckId ?? 'unsaved',
+        session.pairs,
+        learningStatistics,
+        wordAttemptStatistics,
+        wordMasteries,
+        Date.now(),
+      );
+
+      setPrimaryGameResult(completedResult);
+      setGameResult(completedResult);
+      setFocusedReviewState(
+        completedResult.missedWordPairIds.length > 0
+          ? FocusedReviewState.Available
+          : FocusedReviewState.Unavailable,
+      );
+    } else if (focusedReviewState === FocusedReviewState.Quiz) {
+      setGameResult(
+        applyFocusedReviewToGameResult(
+          primaryGameResult,
+          focusedReviewAssessmentStatistics,
+          Date.now(),
+        ),
+      );
+      setFocusedReviewState(FocusedReviewState.Complete);
+    }
+  }, [
+    focusedReviewAssessmentStatistics,
+    focusedReviewState,
+    gameStage,
+    learningStatistics,
+    primaryGameResult,
+    session,
+    wordAttemptStatistics,
+    wordMasteries,
+  ]);
 
   useEffect(() => {
     if (gameStage !== GameStage.MainRound || !isTimedMainRound) {
@@ -273,6 +349,14 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
     }
   }, [preparationWordIndex, session, startEasyReinforcement, startMainRound]);
 
+  const skipPreparation = useCallback(() => {
+    if (gameStage !== GameStage.Preparation || !session || session.pairs.length === 0) {
+      return;
+    }
+
+    startMainRound();
+  }, [gameStage, session, startMainRound]);
+
   const completeCurrentReinforcementWord = useCallback(() => {
     setIsLearnedWordCelebrationVisible(true);
     learnedWordCelebrationTimeout.current = setTimeout(() => {
@@ -330,6 +414,7 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
           incrementWordIncorrectAttempt(
             currentWordAttemptStatistics,
             currentReinforcementWordPair.id,
+            GameAttemptPhase.GuidedReinforcement,
           ),
         );
         reinforcementFeedbackTimeout.current = setTimeout(() => {
@@ -343,7 +428,11 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
 
       setReinforcementFeedback(ReinforcementFeedback.Correct);
       setWordAttemptStatistics((currentWordAttemptStatistics) =>
-        incrementWordCorrectAttempt(currentWordAttemptStatistics, currentReinforcementWordPair.id),
+        incrementWordCorrectAttempt(
+          currentWordAttemptStatistics,
+          currentReinforcementWordPair.id,
+          GameAttemptPhase.GuidedReinforcement,
+        ),
       );
       reinforcementFeedbackTimeout.current = setTimeout(() => {
         const { nextCorrectRepetitionCount, isWordComplete } = advanceReinforcementRepetition(
@@ -573,6 +662,7 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
           incrementWordCorrectAttempt(
             currentWordAttemptStatistics,
             selectedWordGameBoardPair.wordPairId,
+            selectMatchingAttemptPhase(gameStage, focusedReviewState),
           ),
         );
 
@@ -593,6 +683,7 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
           incrementWordIncorrectAttempt(
             currentWordAttemptStatistics,
             selectedWordGameBoardPair.wordPairId,
+            selectMatchingAttemptPhase(gameStage, focusedReviewState),
           ),
         );
       }
@@ -628,6 +719,7 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
       gameStage,
       matchCelebrationAnimation,
       mainRoundScore,
+      focusedReviewState,
       timedRoundPhase,
       translationBoardPairs,
     ],
@@ -795,8 +887,11 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
     );
     setFinalQuizFeedback(FinalQuizFeedback.None);
     setSelectedFinalQuizAnswerId(null);
+    if (focusedReviewState === FocusedReviewState.Practice) {
+      setFocusedReviewState(FocusedReviewState.Quiz);
+    }
     setGameStage(GameStage.FinalQuiz);
-  }, [difficultWordPairs, session?.pairs]);
+  }, [difficultWordPairs, focusedReviewState, session?.pairs]);
 
   useEffect(() => {
     const completedEveryPracticePair =
@@ -830,7 +925,13 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
           incrementWordPairMismatchCount(currentMismatchStatistics, currentFinalQuizQuestion.id),
         );
         setWordAttemptStatistics((currentWordAttemptStatistics) =>
-          incrementWordIncorrectAttempt(currentWordAttemptStatistics, currentFinalQuizQuestion.id),
+          incrementWordIncorrectAttempt(
+            currentWordAttemptStatistics,
+            currentFinalQuizQuestion.id,
+            focusedReviewState === FocusedReviewState.Quiz
+              ? GameAttemptPhase.FocusedReviewQuiz
+              : GameAttemptPhase.FinalQuiz,
+          ),
         );
         setFinalQuizFeedback(FinalQuizFeedback.Miss);
         finalQuizFeedbackTimeout.current = setTimeout(() => {
@@ -844,7 +945,13 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
 
       setFinalQuizFeedback(FinalQuizFeedback.Correct);
       setWordAttemptStatistics((currentWordAttemptStatistics) =>
-        incrementWordCorrectAttempt(currentWordAttemptStatistics, currentFinalQuizQuestion.id),
+        incrementWordCorrectAttempt(
+          currentWordAttemptStatistics,
+          currentFinalQuizQuestion.id,
+          focusedReviewState === FocusedReviewState.Quiz
+            ? GameAttemptPhase.FocusedReviewQuiz
+            : GameAttemptPhase.FinalQuiz,
+        ),
       );
       finalQuizFeedbackTimeout.current = setTimeout(() => {
         const nextFinalQuizQuestionIndex = currentFinalQuizQuestionIndex + 1;
@@ -879,6 +986,7 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
       difficultWordPairs,
       finalQuizFeedback,
       finalQuizWordPairs,
+      focusedReviewState,
       gameStage,
       session?.pairs,
     ],
@@ -906,6 +1014,31 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
     setMatchCompletionCountdown(null);
     setGameStage(GameStage.DifficultWordsPractice);
   }, [difficultWordPairs]);
+
+  const startFocusedReview = useCallback(() => {
+    if (focusedReviewState !== FocusedReviewState.Available || !primaryGameResult || !session) {
+      return;
+    }
+
+    const missedWordPairIds = new Set(primaryGameResult.missedWordPairIds);
+    const focusedWordPairs = session.pairs.filter((wordPair) => missedWordPairIds.has(wordPair.id));
+    const initialPracticeBoard = createInitialGameBoard(
+      focusedWordPairs,
+      PRACTICE_BOARD_SIZE,
+      PRACTICE_BOARD_PAIR_ID_PREFIX,
+    );
+
+    setDifficultWordPairs(focusedWordPairs);
+    setGameBoard(initialPracticeBoard);
+    setTranslationBoardPairs(shuffle(initialPracticeBoard));
+    setNextPracticePairIndex(Math.min(PRACTICE_BOARD_SIZE, focusedWordPairs.length));
+    setCompletedPracticeWordPairIds([]);
+    setSelectedBoardPair(createEmptySelectedBoardPair());
+    setMatchFeedback(MatchFeedback.None);
+    setMatchCompletionCountdown(null);
+    setFocusedReviewState(FocusedReviewState.Practice);
+    setGameStage(GameStage.DifficultWordsPractice);
+  }, [focusedReviewState, primaryGameResult, session]);
 
   return {
     gameStage,
@@ -946,7 +1079,12 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
     passedFinalQuizWordPairCount,
     finalQuizWordPairCount,
     completedWordStatistics,
+    focusedReviewAssessmentStatistics,
+    focusedReviewWordStatistics,
+    focusedReviewState,
+    gameResult,
     acknowledgePreparationWord,
+    skipPreparation,
     selectReinforcementAnswer,
     selectWordCard,
     selectTranslationCard,
@@ -955,5 +1093,6 @@ export function useMatchingGame(session: GameSession | null): UseMatchingGameRes
     startDifficultWordsPractice,
     startFinalQuiz,
     continueTimedRound,
+    startFocusedReview,
   };
 }

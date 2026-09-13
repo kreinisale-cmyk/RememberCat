@@ -1,19 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { loadWordStatistics, persistCompletedWordStatistics } from '@/database/wordStatistics';
+import {
+  loadWordMasteries,
+  loadWordStatistics,
+  persistCompletedWordStatistics,
+} from '@/database/wordStatistics';
 
 import { WORD_STATISTICS_ERROR_MESSAGE } from '../../constants';
-import { CompletedWordStatistic, WordStatistic } from '../../types';
+import { PersistAssessmentOptions, WordMastery, WordStatistic } from '../../types';
 
 export function useWordStatisticsLibrary() {
   const [wordStatistics, setWordStatistics] = useState<WordStatistic[]>([]);
+  const [wordMasteries, setWordMasteries] = useState<WordMastery[]>([]);
   const [isWordStatisticsLoading, setIsWordStatisticsLoading] = useState(true);
   const [wordStatisticsError, setWordStatisticsError] = useState<string | null>(null);
 
   const refreshWordStatistics = useCallback(async () => {
-    const storedWordStatistics = await loadWordStatistics();
+    const [storedWordStatistics, storedWordMasteries] = await Promise.all([
+      loadWordStatistics(),
+      loadWordMasteries(),
+    ]);
 
     setWordStatistics(storedWordStatistics);
+    setWordMasteries(storedWordMasteries);
   }, []);
 
   useEffect(() => {
@@ -21,10 +30,14 @@ export function useWordStatisticsLibrary() {
 
     async function initializeWordStatistics() {
       try {
-        const storedWordStatistics = await loadWordStatistics();
+        const [storedWordStatistics, storedWordMasteries] = await Promise.all([
+          loadWordStatistics(),
+          loadWordMasteries(),
+        ]);
 
         if (isMounted) {
           setWordStatistics(storedWordStatistics);
+          setWordMasteries(storedWordMasteries);
         }
       } catch {
         if (isMounted) {
@@ -44,10 +57,24 @@ export function useWordStatisticsLibrary() {
     };
   }, []);
 
-  const saveCompletedGameStatistics = useCallback(
-    async (savedDeckId: string, completedWordStatistics: CompletedWordStatistic[]) => {
+  const saveAssessmentStatistics = useCallback(
+    async ({
+      savedDeckId,
+      completedWordStatistics,
+      assessmentStatistics,
+      seenWordPairIds,
+      missedWordPairIds,
+      updateBestStatistics,
+    }: PersistAssessmentOptions) => {
       try {
-        await persistCompletedWordStatistics(savedDeckId, completedWordStatistics);
+        await persistCompletedWordStatistics(
+          savedDeckId,
+          completedWordStatistics,
+          assessmentStatistics,
+          seenWordPairIds,
+          missedWordPairIds,
+          updateBestStatistics,
+        );
         await refreshWordStatistics();
         setWordStatisticsError(null);
 
@@ -63,9 +90,10 @@ export function useWordStatisticsLibrary() {
 
   return {
     wordStatistics,
+    wordMasteries,
     isWordStatisticsLoading,
     wordStatisticsError,
     refreshWordStatistics,
-    saveCompletedGameStatistics,
+    saveAssessmentStatistics,
   };
 }

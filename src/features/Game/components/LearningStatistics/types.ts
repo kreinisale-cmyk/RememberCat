@@ -1,7 +1,8 @@
-import { WordPairLearningStatistics } from '../../types';
+import { CompletedGameResult, FocusedReviewState } from '../../types';
 
 export type LearningStatisticsProps = {
-  learningStatistics: WordPairLearningStatistics[];
-  practicePairCount: number;
+  result: CompletedGameResult;
+  focusedReviewState: FocusedReviewState;
+  onReviewMissedWords: () => void;
   onReturnToSetup: () => void;
 };

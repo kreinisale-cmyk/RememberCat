@@ -99,6 +99,17 @@ export const styles = StyleSheet.create({
     fontFamily: RememberCatFonts.bodyBold,
     fontSize: 10,
   },
+  unplayedMetrics: { alignItems: 'flex-end', gap: 4 },
+  mastery: {
+    overflow: 'hidden',
+    borderRadius: 999,
+    backgroundColor: RememberCatColors.successBackground,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    color: RememberCatColors.success,
+    fontFamily: RememberCatFonts.bodyExtraBold,
+    fontSize: 9,
+  },
   metricCopy: { alignItems: 'flex-end' },
   accuracy: {
     color: '#397b6d',

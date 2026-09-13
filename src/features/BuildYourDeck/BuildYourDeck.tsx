@@ -6,20 +6,27 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { RememberCatColors } from '@/constants/theme';
+import { StartGameSessionStatus } from '@/features/GameSession/types';
 import { useGameSession } from '@/features/GameSession/useGameSession/useGameSession';
 
 import { BulkWordPairModal } from './components/BulkWordPairModal/BulkWordPairModal';
+import { DeckNameField } from './components/DeckNameField/DeckNameField';
 import { EmptyDeck } from './components/EmptyDeck/EmptyDeck';
 import { SavedDeckActions } from './components/SavedDeckActions/SavedDeckActions';
 import { SavedDeckGrid } from './components/SavedDeckGrid/SavedDeckGrid';
 import { WordListActions } from './components/WordListActions/WordListActions';
-import { WordPairGrid } from './components/WordPairGrid';
+import { WordPairGrid } from './components/WordPairGrid/WordPairGrid';
 import { WordPairModal } from './components/WordPairModal/WordPairModal';
 import {
   CURRENT_DECK_HINT,
   CURRENT_DECK_TITLE,
+  DECK_SAVE_ERROR_MESSAGE,
+  DUPLICATE_DECK_MESSAGE,
+  DUPLICATE_PAIR_MESSAGE,
   GAME_ROUTE,
   GAME_SETUP_ROUTE,
+  MAX_DECK_NAME_LENGTH,
+  REQUIRED_DECK_NAME_MESSAGE,
   SAVED_DECK_LIBRARY_INTRO,
   WORDS_ROUTE,
 } from './constants';
@@ -36,6 +43,8 @@ import {
 import {
   createWordPair,
   filterSavedDecksByDeckSize,
+  findCandidateWordPairConflict,
+  findWordPairConflicts,
   hasCompleteWordPair,
   parseBuildYourDeckEntryMode,
   parseBuildYourDeckEntryOrigin,
@@ -74,6 +83,8 @@ export function BuildYourDeck() {
   const [importMessage, setImportMessage] = useState('');
   const [isBulkModalVisible, setIsBulkModalVisible] = useState(false);
   const [bulkWords, setBulkWords] = useState('');
+  const [deckName, setDeckName] = useState('');
+  const [wordPairModalError, setWordPairModalError] = useState<string | null>(null);
 
   const pairs = draft.pairs;
   const wordPairLimit = draft.deckSize;
@@ -87,8 +98,19 @@ export function BuildYourDeck() {
     ? selectedSavedDeckId
     : (categorySavedDecks[0]?.id ?? null);
   const isDeckFull = pairs.length >= wordPairLimit;
-  const isDeckReady = pairs.length === wordPairLimit && pairs.every(hasCompleteWordPair);
-  const canSavePair = Boolean(word.trim() && translation.trim());
+  const wordPairConflicts = useMemo(() => findWordPairConflicts(pairs), [pairs]);
+  const candidateWordPair = useMemo(
+    () => ({ id: 'candidate', word, translation }),
+    [translation, word],
+  );
+  const hasCandidateConflict = findCandidateWordPairConflict(pairs, candidateWordPair);
+  const hasValidDeckName = Boolean(deckName.trim());
+  const isDeckReady =
+    pairs.length === wordPairLimit &&
+    pairs.every(hasCompleteWordPair) &&
+    wordPairConflicts.length === 0 &&
+    hasValidDeckName;
+  const canSavePair = Boolean(word.trim() && translation.trim() && !hasCandidateConflict);
   const isLibraryView = viewMode === BuildYourDeckViewMode.Library;
   const importWordPairs = useImportWordPairs({
     pairs,
@@ -109,6 +131,7 @@ export function BuildYourDeck() {
       setEditingSavedDeckId(null);
       setSelectedSavedDeckId(null);
       setImportMessage('');
+      setDeckName('');
       setViewMode(BuildYourDeckViewMode.Editor);
     }
   }, [entryMode, updateDraft]);
@@ -119,24 +142,34 @@ export function BuildYourDeck() {
     }
 
     if (reuseSavedDeck(routeSavedDeckId)) {
+      const savedDeck = savedDecks.find((candidateDeck) => candidateDeck.id === routeSavedDeckId);
+
       setEditingSavedDeckId(routeSavedDeckId);
       setSelectedSavedDeckId(routeSavedDeckId);
+      setDeckName(savedDeck?.name ?? '');
       setImportMessage('');
       setViewMode(BuildYourDeckViewMode.Editor);
     }
-  }, [entryMode, reuseSavedDeck, routeSavedDeckId]);
+  }, [entryMode, reuseSavedDeck, routeSavedDeckId, savedDecks]);
 
   function setDraftPairs(nextPairs: typeof pairs) {
     updateDraft({ pairs: nextPairs });
   }
 
   function savePair() {
+    if (hasCandidateConflict) {
+      setWordPairModalError(DUPLICATE_PAIR_MESSAGE);
+
+      return;
+    }
+
     if (!canSavePair || isDeckFull) return;
 
     setDraftPairs([createWordPair(word, translation), ...pairs]);
     setWord('');
     setTranslation('');
     setIsModalVisible(false);
+    setWordPairModalError(null);
   }
 
   function editPair(id: string, field: WordPairField, value: string) {
@@ -153,6 +186,7 @@ export function BuildYourDeck() {
     }
 
     setEditingSavedDeckId(savedDeckId);
+    setDeckName(savedDecks.find((savedDeck) => savedDeck.id === savedDeckId)?.name ?? '');
     setImportMessage('');
     setViewMode(BuildYourDeckViewMode.Editor);
   }
@@ -160,6 +194,7 @@ export function BuildYourDeck() {
   function createNewDeck() {
     updateDraft({ pairs: [], savedDeckId: null });
     setEditingSavedDeckId(null);
+    setDeckName('');
     setImportMessage('');
     setViewMode(BuildYourDeckViewMode.Editor);
   }
@@ -210,8 +245,18 @@ export function BuildYourDeck() {
   async function startGame() {
     if (!isDeckReady) return;
 
-    await startGameSession(editingSavedDeckId ?? undefined);
-    router.push(GAME_ROUTE);
+    const result = await startGameSession({
+      deckName: deckName.trim(),
+      savedDeckId: editingSavedDeckId ?? undefined,
+    });
+
+    if (result.status === StartGameSessionStatus.Started) {
+      router.push(GAME_ROUTE);
+    } else if (result.status === StartGameSessionStatus.DuplicateDeck) {
+      setImportMessage(DUPLICATE_DECK_MESSAGE);
+    } else {
+      setImportMessage(DECK_SAVE_ERROR_MESSAGE);
+    }
   }
 
   function startSelectedSavedDeck() {
@@ -283,6 +328,12 @@ export function BuildYourDeck() {
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
             >
+              <DeckNameField
+                name={deckName}
+                errorMessage={hasValidDeckName ? null : REQUIRED_DECK_NAME_MESSAGE}
+                maxLength={MAX_DECK_NAME_LENGTH}
+                onChange={setDeckName}
+              />
               <View style={styles.currentDeckHeading}>
                 <ThemedText style={styles.currentDeckTitle}>{CURRENT_DECK_TITLE}</ThemedText>
                 <ThemedText style={styles.currentDeckHint}>{CURRENT_DECK_HINT}</ThemedText>
@@ -300,7 +351,12 @@ export function BuildYourDeck() {
               {pairs.length === 0 ? (
                 <EmptyDeck />
               ) : (
-                <WordPairGrid pairs={pairs} onEdit={editPair} onRemove={deletePair} />
+                <WordPairGrid
+                  conflicts={wordPairConflicts}
+                  pairs={pairs}
+                  onEdit={editPair}
+                  onRemove={deletePair}
+                />
               )}
             </ScrollView>
             <WordListActions
@@ -319,9 +375,16 @@ export function BuildYourDeck() {
           word={word}
           translation={translation}
           canSave={canSavePair}
+          errorMessage={hasCandidateConflict ? DUPLICATE_PAIR_MESSAGE : wordPairModalError}
           onClose={() => setIsModalVisible(false)}
-          onWordChange={setWord}
-          onTranslationChange={setTranslation}
+          onWordChange={(value) => {
+            setWord(value);
+            setWordPairModalError(null);
+          }}
+          onTranslationChange={(value) => {
+            setTranslation(value);
+            setWordPairModalError(null);
+          }}
           onSave={savePair}
         />
         <BulkWordPairModal

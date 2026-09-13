@@ -15,3 +15,15 @@ export type WordStatisticDatabaseRow = {
   bestTotalAttemptCount: number;
   lastPlayedAt: number;
 };
+
+export type WordMasteryDatabaseRow = {
+  savedDeckId: string;
+  wordPairId: string;
+  completedAssessmentCount: number;
+  lifetimeCorrectAttemptCount: number;
+  lifetimeIncorrectAttemptCount: number;
+  cleanAssessmentStreak: number;
+  latestAccuracy: number;
+  lastSeenAt: number;
+  lastMissedAt: number | null;
+};

@@ -21,4 +21,17 @@ export type BuildYourDeckRouteParams = {
   size?: string | string[];
 };
 
-export type WordPairField = 'word' | 'translation';
+export enum WordPairField {
+  Word = 'word',
+  Translation = 'translation',
+}
+
+export enum WordPairAdditionSource {
+  Bulk = 'bulk',
+  Import = 'import',
+}
+
+export type WordPairConflict = {
+  wordPairId: string;
+  fields: WordPairField[];
+};

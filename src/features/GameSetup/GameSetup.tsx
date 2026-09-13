@@ -3,16 +3,19 @@ import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Cat from 'lucide-react-native/icons/cat';
 import Clock from 'lucide-react-native/icons/clock';
 import Layers from 'lucide-react-native/icons/layers';
+import Volume2 from 'lucide-react-native/icons/volume-2';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { RememberCatColors } from '@/constants/theme';
+import { useAppPreferences } from '@/features/AppPreferences/useAppPreferences/useAppPreferences';
 import { BuildYourDeckEntryMode, BuildYourDeckEntryOrigin } from '@/features/BuildYourDeck/types';
 import { DeckSize, FocusMode, MatchMode } from '@/features/GameSession/types';
 import { useGameSession } from '@/features/GameSession/useGameSession/useGameSession';
 
 import { DeckSizeSelector } from './components/DeckSizeSelector/DeckSizeSelector';
+import { GameFeedbackSettings } from './components/GameFeedbackSettings/GameFeedbackSettings';
 import { ModeToggle } from './components/ModeToggle/ModeToggle';
 import { SettingsCard } from './components/SettingsCard/SettingsCard';
 import { SettingsCardIconTone } from './components/SettingsCard/types';
@@ -26,6 +29,14 @@ import {
 } from './utils';
 
 export function GameSetup() {
+  const {
+    preferences,
+    isPreferencesLoading,
+    preferencesError,
+    setCatReactionsEnabled,
+    setGameCuesEnabled,
+    setHapticsEnabled,
+  } = useAppPreferences();
   const {
     draft,
     savedDecks,
@@ -122,6 +133,22 @@ export function GameSetup() {
               second={FocusMode.Free}
               selected={draft.focusMode}
               onChange={updateFocusMode}
+            />
+          </SettingsCard>
+          <SettingsCard
+            icon={Volume2}
+            title="Game feedback"
+            detail="Choose your cat reactions, game sounds, and touch feedback."
+          >
+            <GameFeedbackSettings
+              catReactionsEnabled={preferences.catReactionsEnabled}
+              gameCuesEnabled={preferences.gameCuesEnabled}
+              hapticsEnabled={preferences.hapticsEnabled}
+              isDisabled={isPreferencesLoading}
+              errorMessage={preferencesError}
+              onCatReactionsEnabledChange={setCatReactionsEnabled}
+              onGameCuesEnabledChange={setGameCuesEnabled}
+              onHapticsEnabledChange={setHapticsEnabled}
             />
           </SettingsCard>
           <SettingsCard

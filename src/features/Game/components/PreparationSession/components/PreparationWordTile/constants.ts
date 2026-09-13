@@ -1,0 +1,1 @@
+export const PREPARATION_WORD_TILE_HEIGHT = 88;

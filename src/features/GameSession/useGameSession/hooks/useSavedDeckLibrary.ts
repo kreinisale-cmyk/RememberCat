@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { deleteSavedDeck, loadSavedDecks, persistSavedDeck } from '@/database/savedDecks';
+import {
+  deleteSavedDeck,
+  DuplicateSavedDeckError,
+  loadSavedDecks,
+  persistSavedDeck,
+} from '@/database/savedDecks';
 
-import { SAVED_DECK_LIBRARY_ERROR_MESSAGE } from '../../constants';
-import { SavedDeck, WordPair } from '../../types';
+import {
+  DUPLICATE_SAVED_DECK_ERROR_MESSAGE,
+  SAVED_DECK_LIBRARY_ERROR_MESSAGE,
+} from '../../constants';
+import { SavedDeck, SavedDeckPersistenceStatus, SaveDeckOptions } from '../../types';
 
 export function useSavedDeckLibrary() {
   const [savedDecks, setSavedDecks] = useState<SavedDeck[]>([]);
@@ -45,17 +53,32 @@ export function useSavedDeckLibrary() {
   }, []);
 
   const saveDeck = useCallback(
-    async (pairs: WordPair[], savedDeckId?: string) => {
+    async ({ name, pairs, savedDeckId }: SaveDeckOptions) => {
       try {
-        const persistedSavedDeckId = await persistSavedDeck(pairs, savedDeckId);
+        const persistedSavedDeckId = await persistSavedDeck(name, pairs, savedDeckId);
         await refreshSavedDecks();
         setSavedDeckLibraryError(null);
 
-        return persistedSavedDeckId;
-      } catch {
+        return {
+          status: SavedDeckPersistenceStatus.Saved,
+          savedDeckId: persistedSavedDeckId,
+        };
+      } catch (error) {
+        if (error instanceof DuplicateSavedDeckError) {
+          setSavedDeckLibraryError(DUPLICATE_SAVED_DECK_ERROR_MESSAGE);
+
+          return {
+            status: SavedDeckPersistenceStatus.DuplicateDeck,
+            savedDeckId: null,
+          };
+        }
+
         setSavedDeckLibraryError(SAVED_DECK_LIBRARY_ERROR_MESSAGE);
 
-        return null;
+        return {
+          status: SavedDeckPersistenceStatus.Failed,
+          savedDeckId: null,
+        };
       }
     },
     [refreshSavedDecks],

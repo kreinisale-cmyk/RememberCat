@@ -5,6 +5,8 @@ import { RememberCatColors, RememberCatFonts } from '@/constants/theme';
 export const styles = StyleSheet.create({
   content: {
     flex: 1,
+  },
+  scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 30,
     paddingBottom: 20,
@@ -33,16 +35,45 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 10,
   },
-  button: {
-    marginTop: 12,
+  reviewButton: {
+    marginTop: 14,
     borderRadius: 18,
     backgroundColor: RememberCatColors.primary,
     paddingHorizontal: 24,
     paddingVertical: 16,
     alignItems: 'center',
   },
-  buttonText: {
+  reviewButtonText: {
     color: RememberCatColors.primaryForeground,
+    fontFamily: RememberCatFonts.bodyExtraBold,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  reviewComplete: {
+    marginTop: 14,
+    borderRadius: 18,
+    backgroundColor: RememberCatColors.successBackground,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  reviewCompleteText: {
+    color: RememberCatColors.success,
+    fontFamily: RememberCatFonts.bodyExtraBold,
+    fontSize: 14,
+  },
+  returnButton: {
+    marginTop: 10,
+    borderRadius: 18,
+    borderColor: RememberCatColors.border,
+    borderWidth: 1,
+    backgroundColor: RememberCatColors.card,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  returnButtonText: {
+    color: RememberCatColors.foreground,
     fontFamily: RememberCatFonts.bodyExtraBold,
     fontSize: 16,
     lineHeight: 22,

@@ -12,6 +12,7 @@ export function WordPairModal({
   word,
   translation,
   canSave,
+  errorMessage,
   onClose,
   onWordChange,
   onTranslationChange,
@@ -48,6 +49,7 @@ export function WordPairModal({
             style={styles.input}
             onSubmitEditing={onSave}
           />
+          {errorMessage ? <ThemedText style={styles.error}>{errorMessage}</ThemedText> : null}
           <Pressable
             onPress={onSave}
             disabled={!canSave}

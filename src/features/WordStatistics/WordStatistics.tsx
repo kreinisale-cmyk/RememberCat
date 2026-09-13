@@ -15,7 +15,7 @@ import { DeckSizeSelector } from '@/features/GameSetup/components/DeckSizeSelect
 import { WordStatisticsDeckCard } from './components/WordStatisticsDeckCard/WordStatisticsDeckCard';
 import { EMPTY_STATISTICS_COPY, STATISTICS_COPY } from './constants';
 import { styles } from './styles';
-import { createWordStatisticLookup } from './utils';
+import { createWordMasteryLookup, createWordStatisticLookup } from './utils';
 
 export function WordStatistics() {
   const {
@@ -24,6 +24,7 @@ export function WordStatistics() {
     isSavedDeckLibraryLoading,
     savedDeckLibraryError,
     wordStatistics,
+    wordMasteries,
     isWordStatisticsLoading,
     wordStatisticsError,
   } = useGameSession();
@@ -36,6 +37,7 @@ export function WordStatistics() {
     () => createWordStatisticLookup(wordStatistics),
     [wordStatistics],
   );
+  const wordMasteryLookup = useMemo(() => createWordMasteryLookup(wordMasteries), [wordMasteries]);
   const isLoading = isSavedDeckLibraryLoading || isWordStatisticsLoading;
   const errorMessage = savedDeckLibraryError ?? wordStatisticsError;
 
@@ -69,6 +71,7 @@ export function WordStatistics() {
             key={savedDeck.id}
             savedDeck={savedDeck}
             statisticLookup={wordStatisticLookup}
+            masteryLookup={wordMasteryLookup}
           />
         ))}
       </View>

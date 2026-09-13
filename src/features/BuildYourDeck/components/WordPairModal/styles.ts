@@ -53,6 +53,13 @@ export const styles = StyleSheet.create({
     fontSize: 15,
     marginTop: 9,
   },
+  error: {
+    color: RememberCatColors.primary,
+    fontFamily: RememberCatFonts.bodyBold,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 7,
+  },
   saveButton: {
     height: 57,
     borderRadius: 18,

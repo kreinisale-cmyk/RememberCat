@@ -1,7 +1,9 @@
-export function createLearningStatisticsDescription(practicePairCount: number) {
-  if (practicePairCount === 1) {
-    return 'See which words caused mistakes and how often they appeared.';
+export function createLearningStatisticsDescription(missedWordPairCount: number) {
+  if (missedWordPairCount === 0) {
+    return 'A clean round. Every assessed word is moving in the right direction.';
+  } else if (missedWordPairCount === 1) {
+    return 'One word needs another look. Review it whenever you are ready.';
   }
 
-  return `You practiced ${practicePairCount} tricky words. The chart shows where the mistakes happened.`;
+  return `${missedWordPairCount} words need another look. Your original result stays unchanged after review.`;
 }
