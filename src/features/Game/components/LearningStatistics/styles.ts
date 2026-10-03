@@ -35,8 +35,11 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 10,
   },
+  actions: {
+    gap: 10,
+    marginBottom: 14,
+  },
   reviewButton: {
-    marginTop: 14,
     borderRadius: 18,
     backgroundColor: RememberCatColors.primary,
     paddingHorizontal: 24,
@@ -50,7 +53,6 @@ export const styles = StyleSheet.create({
     lineHeight: 22,
   },
   reviewComplete: {
-    marginTop: 14,
     borderRadius: 18,
     backgroundColor: RememberCatColors.successBackground,
     paddingHorizontal: 20,
@@ -63,7 +65,6 @@ export const styles = StyleSheet.create({
     fontSize: 14,
   },
   returnButton: {
-    marginTop: 10,
     borderRadius: 18,
     borderColor: RememberCatColors.border,
     borderWidth: 1,

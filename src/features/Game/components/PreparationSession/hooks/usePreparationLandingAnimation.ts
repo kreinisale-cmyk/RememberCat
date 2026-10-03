@@ -50,6 +50,7 @@ export function usePreparationLandingAnimation({
   });
   const [landingLayoutState, setLandingLayoutState] =
     useState<PreparationLandingLayoutState | null>(null);
+  const [isSourceEntranceAnimating, setIsSourceEntranceAnimating] = useState(true);
   const activeAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
   const sourceEntranceAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
   const advanceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,6 +165,7 @@ export function usePreparationLandingAnimation({
     const generation = generationRef.current;
     setLandingLayoutState(null);
     setAnimationState({ phase: PreparationAnimationPhase.Idle, wordPairId });
+    setIsSourceEntranceAnimating(true);
     flightProgress.setValue(0);
     sourceCardOpacity.setValue(0);
     sourceEntranceAnimationRef.current = Animated.timing(sourceCardOpacity, {
@@ -173,8 +175,12 @@ export function usePreparationLandingAnimation({
       easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
     });
-    sourceEntranceAnimationRef.current.start(() => {
+    sourceEntranceAnimationRef.current.start(({ finished }) => {
       sourceEntranceAnimationRef.current = null;
+
+      if (finished && generation === generationRef.current) {
+        setIsSourceEntranceAnimating(false);
+      }
     });
 
     async function cacheLandingLayouts() {
@@ -226,10 +232,7 @@ export function usePreparationLandingAnimation({
     acknowledgeWord,
     cancelAnimation,
     flightProgress,
-    isCurrentWordLanded: phase === PreparationAnimationPhase.Landed,
-    isInteractionDisabled: phase !== PreparationAnimationPhase.Idle || !landingLayouts,
-    isOverlayVisible: phase !== PreparationAnimationPhase.Landed,
-    isSourceVisible: phase === PreparationAnimationPhase.Idle,
+    isSourceEntranceAnimating,
     landingLayouts,
     phase,
     sourceCardOpacity,

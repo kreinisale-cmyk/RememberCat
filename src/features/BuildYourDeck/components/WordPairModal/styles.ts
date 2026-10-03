@@ -18,6 +18,7 @@ export const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 8 },
     elevation: 9,
+    maxHeight: '92%',
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   kicker: {
@@ -59,6 +60,17 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     marginTop: 7,
+  },
+  reviewNotice: {
+    borderRadius: 10,
+    backgroundColor: '#fff3d6',
+    color: '#8b5700',
+    fontFamily: RememberCatFonts.bodyBold,
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 9,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   saveButton: {
     height: 57,

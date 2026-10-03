@@ -2,51 +2,43 @@ import { useCallback } from 'react';
 
 import { WordPair } from '@/features/GameSession/types';
 
-import { WordPairAdditionSource } from '../types';
-import { createWordPairAdditionMessage, parseWordPairFile, selectUniqueWordPairs } from '../utils';
+import { BulkPasteAnalysis, BulkWordPairAdditionResult } from '../types';
+import { createBulkWordPairAdditionMessage, createWordPair } from '../utils';
 
 type UseBulkAddWordPairsOptions = {
   pairs: WordPair[];
-  wordPairLimit: number;
   setDraftPairs: (pairs: WordPair[]) => void;
   setImportMessage: (message: string) => void;
 };
 
 export function useBulkAddWordPairs({
   pairs,
-  wordPairLimit,
   setDraftPairs,
   setImportMessage,
 }: UseBulkAddWordPairsOptions) {
   return useCallback(
-    (contents: string) => {
-      const availableSlots = wordPairLimit - pairs.length;
-      const parsedPairs = parseWordPairFile(contents);
-      const { acceptedPairs, skippedPairCount } = selectUniqueWordPairs(
-        pairs,
-        parsedPairs,
-        availableSlots,
+    (analysis: BulkPasteAnalysis): BulkWordPairAdditionResult => {
+      const addedPairs = analysis.acceptedCandidates.map((candidate) =>
+        createWordPair(candidate.word, candidate.translation),
       );
 
-      if (!acceptedPairs.length) {
-        setImportMessage(
-          createWordPairAdditionMessage(WordPairAdditionSource.Bulk, 0, skippedPairCount),
-        );
-
-        return false;
+      if (!addedPairs.length) {
+        return { addedPairCount: 0, remainingContents: analysis.remainingContents };
       }
 
-      setDraftPairs([...acceptedPairs, ...pairs]);
+      setDraftPairs([...addedPairs, ...pairs]);
       setImportMessage(
-        createWordPairAdditionMessage(
-          WordPairAdditionSource.Bulk,
-          acceptedPairs.length,
-          skippedPairCount,
+        createBulkWordPairAdditionMessage(
+          addedPairs.length,
+          analysis.lineResults.length - addedPairs.length,
         ),
       );
 
-      return true;
+      return {
+        addedPairCount: addedPairs.length,
+        remainingContents: analysis.remainingContents,
+      };
     },
-    [pairs, setDraftPairs, setImportMessage, wordPairLimit],
+    [pairs, setDraftPairs, setImportMessage],
   );
 }

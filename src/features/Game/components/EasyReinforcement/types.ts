@@ -12,6 +12,8 @@ export type EasyReinforcementProps = {
   feedback: ReinforcementFeedback;
   selectedAnswerId: string | null;
   isCelebrating: boolean;
+  isSkipDisabled: boolean;
   onClose: () => void;
   onSelectAnswer: (wordPairId: string) => void;
+  onSkip: () => void;
 };

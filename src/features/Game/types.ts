@@ -6,6 +6,7 @@ import {
 } from '@/features/GameSession/types';
 
 export enum GameStage {
+  GetReady = 'get-ready',
   Preparation = 'preparation',
   EasyReinforcement = 'easy-reinforcement',
   MainRound = 'main-round',

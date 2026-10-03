@@ -6,6 +6,7 @@ export const WORD_PAIR_MODAL_COPY = {
   wordPlaceholder: 'Word in English',
   translationPlaceholder: 'Translation',
   save: 'Add to deck',
+  reviewAndSave: 'Review and add pair',
   arrow: '→',
   placeholderTextColor: '#bea89d',
 } as const;

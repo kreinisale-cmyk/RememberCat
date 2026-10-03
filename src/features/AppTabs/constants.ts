@@ -1,17 +1,20 @@
 import BookText from 'lucide-react-native/icons/book-text';
 import ChartColumn from 'lucide-react-native/icons/chart-column';
 import Gamepad2 from 'lucide-react-native/icons/gamepad-2';
+import Settings from 'lucide-react-native/icons/settings';
 
 export const APP_TAB_COPY = {
   game: 'Game',
   words: 'Words',
   statistics: 'Statistics',
+  settings: 'Settings',
 } as const;
 
 export const APP_TAB_ICONS = {
   game: Gamepad2,
   words: BookText,
   statistics: ChartColumn,
+  settings: Settings,
 } as const;
 export const APP_TAB_ACTIVE_COLOR = '#e94646';
 export const APP_TAB_INACTIVE_COLOR = '#805d6d';

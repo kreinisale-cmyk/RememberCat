@@ -69,6 +69,7 @@ export function FinalQuizAnswerOption({
       ]}
     >
       <Pressable
+        android_disableSound
         accessibilityRole="button"
         accessibilityLabel={createAnswerAccessibilityLabel(label, isCorrect, isIncorrect)}
         disabled={disabled}

@@ -597,6 +597,7 @@ export function MatchCard({
         </Animated.View>
       ) : null}
       <Pressable
+        android_disableSound
         accessibilityRole="button"
         accessibilityLabel={createMatchOptionAccessibilityLabel(label, completed)}
         accessibilityState={{ disabled }}

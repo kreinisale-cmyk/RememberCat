@@ -16,6 +16,7 @@ import {
   EASY_REINFORCEMENT_CORRECT_FEEDBACK_DURATION_MS,
   EASY_REINFORCEMENT_INCORRECT_FEEDBACK_DURATION_MS,
   EASY_REINFORCEMENT_REPETITION_GOAL,
+  EASY_REINFORCEMENT_SKIP_LOCK_DURATION_MS,
   FINAL_QUIZ_CHOICE_COUNT,
   FINAL_QUIZ_CORRECT_FEEDBACK_DURATION_MS,
   FINAL_QUIZ_MISS_FEEDBACK_DURATION_MS,
@@ -51,6 +52,7 @@ import {
   createCompletedGameResult,
   createCompletedWordStatistics,
   createFinalQuizAnswerChoices,
+  createFocusedReviewWordPairs,
   createGameBoardPair,
   createInitialGameBoard,
   createInitialMismatchStatistics,
@@ -87,7 +89,7 @@ export function useMatchingGame(
 ): UseMatchingGameResult {
   const isTimedMainRound = isChallengeTimed(session);
   const challengeStageDurationSeconds = getChallengeStageDurationSeconds();
-  const [gameStage, setGameStage] = useState(GameStage.Preparation);
+  const [gameStage, setGameStage] = useState(GameStage.GetReady);
   const [preparationWordIndex, setPreparationWordIndex] = useState(0);
   const [gameBoard, setGameBoard] = useState(() =>
     createInitialGameBoard(
@@ -138,7 +140,10 @@ export function useMatchingGame(
     null,
   );
   const [isLearnedWordCelebrationVisible, setIsLearnedWordCelebrationVisible] = useState(false);
+  const [isReinforcementSkipDisabled, setIsReinforcementSkipDisabled] = useState(false);
   const reinforcementFeedbackTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reinforcementSkipLockedRef = useRef(false);
+  const reinforcementSkipLockTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const learnedWordCelebrationTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [difficultWordPairs, setDifficultWordPairs] = useState<WordPair[]>([]);
   const [nextPracticePairIndex, setNextPracticePairIndex] = useState(PRACTICE_BOARD_SIZE);
@@ -264,6 +269,10 @@ export function useMatchingGame(
         clearTimeout(reinforcementFeedbackTimeout.current);
       }
 
+      if (reinforcementSkipLockTimeout.current) {
+        clearTimeout(reinforcementSkipLockTimeout.current);
+      }
+
       if (learnedWordCelebrationTimeout.current) {
         clearTimeout(learnedWordCelebrationTimeout.current);
       }
@@ -326,8 +335,18 @@ export function useMatchingGame(
     setReinforcementFeedback(ReinforcementFeedback.None);
     setSelectedReinforcementAnswerId(null);
     setIsLearnedWordCelebrationVisible(false);
+    reinforcementSkipLockedRef.current = false;
+    setIsReinforcementSkipDisabled(false);
     setGameStage(GameStage.EasyReinforcement);
   }, [session, startMainRound]);
+
+  const completeGetReady = useCallback(() => {
+    if (gameStage !== GameStage.GetReady || !session) {
+      return;
+    }
+
+    setGameStage(GameStage.Preparation);
+  }, [gameStage, session]);
 
   const acknowledgePreparationWord = useCallback(() => {
     if (!session || session.pairs.length === 0) {
@@ -357,35 +376,66 @@ export function useMatchingGame(
     startMainRound();
   }, [gameStage, session, startMainRound]);
 
+  const advanceToNextReinforcementWord = useCallback(() => {
+    const nextReinforcementWordIndex = reinforcementWordIndex + 1;
+    const nextReinforcementWordPair = session?.pairs[nextReinforcementWordIndex];
+
+    setIsLearnedWordCelebrationVisible(false);
+    setReinforcementCorrectRepetitionCount(0);
+    setReinforcementFeedback(ReinforcementFeedback.None);
+    setSelectedReinforcementAnswerId(null);
+
+    if (!nextReinforcementWordPair || !session) {
+      setReinforcementAnswerChoices([]);
+      startMainRound();
+
+      return;
+    }
+
+    setReinforcementWordIndex(nextReinforcementWordIndex);
+    setReinforcementAnswerChoices(
+      createReinforcementAnswerChoices(
+        nextReinforcementWordPair,
+        session.pairs,
+        EASY_REINFORCEMENT_CHOICE_COUNT,
+      ),
+    );
+  }, [reinforcementWordIndex, session, startMainRound]);
+
   const completeCurrentReinforcementWord = useCallback(() => {
     setIsLearnedWordCelebrationVisible(true);
     learnedWordCelebrationTimeout.current = setTimeout(() => {
-      const nextReinforcementWordIndex = reinforcementWordIndex + 1;
-      const nextReinforcementWordPair = session?.pairs[nextReinforcementWordIndex];
-
-      setIsLearnedWordCelebrationVisible(false);
-
-      if (!nextReinforcementWordPair || !session) {
-        startMainRound();
-        learnedWordCelebrationTimeout.current = null;
-
-        return;
-      }
-
-      setReinforcementWordIndex(nextReinforcementWordIndex);
-      setReinforcementCorrectRepetitionCount(0);
-      setReinforcementAnswerChoices(
-        createReinforcementAnswerChoices(
-          nextReinforcementWordPair,
-          session.pairs,
-          EASY_REINFORCEMENT_CHOICE_COUNT,
-        ),
-      );
-      setReinforcementFeedback(ReinforcementFeedback.None);
-      setSelectedReinforcementAnswerId(null);
+      advanceToNextReinforcementWord();
       learnedWordCelebrationTimeout.current = null;
     }, LEARNED_WORD_CELEBRATION_DURATION_MS);
-  }, [reinforcementWordIndex, session, startMainRound]);
+  }, [advanceToNextReinforcementWord]);
+
+  const skipCurrentReinforcementWord = useCallback(() => {
+    if (
+      gameStage !== GameStage.EasyReinforcement ||
+      reinforcementFeedback !== ReinforcementFeedback.None ||
+      isLearnedWordCelebrationVisible ||
+      reinforcementSkipLockedRef.current ||
+      !currentReinforcementWordPair
+    ) {
+      return;
+    }
+
+    reinforcementSkipLockedRef.current = true;
+    setIsReinforcementSkipDisabled(true);
+    advanceToNextReinforcementWord();
+    reinforcementSkipLockTimeout.current = setTimeout(() => {
+      reinforcementSkipLockedRef.current = false;
+      setIsReinforcementSkipDisabled(false);
+      reinforcementSkipLockTimeout.current = null;
+    }, EASY_REINFORCEMENT_SKIP_LOCK_DURATION_MS);
+  }, [
+    advanceToNextReinforcementWord,
+    currentReinforcementWordPair,
+    gameStage,
+    isLearnedWordCelebrationVisible,
+    reinforcementFeedback,
+  ]);
 
   const selectReinforcementAnswer = useCallback(
     (selectedWordPairId: string) => {
@@ -493,12 +543,6 @@ export function useMatchingGame(
 
           return [...currentCompletedTranslationBoardPairIds, matchedTranslationBoardPairId];
         });
-        setGameBoard((currentGameBoard) =>
-          arrangeRemainingWordBoard(currentGameBoard, session.matchMode),
-        );
-        setTranslationBoardPairs((currentTranslationBoardPairs) =>
-          shuffle(currentTranslationBoardPairs),
-        );
         setMainRoundScore((currentScore) => currentScore + 1);
 
         return;
@@ -555,19 +599,17 @@ export function useMatchingGame(
       const remainingGameBoard = gameBoard.filter(
         (gameBoardPair) => gameBoardPair.boardPairId !== matchedGameBoardPairId,
       );
+      const nextCompletedWordPairIds = completedPracticeWordPairIds.includes(matchedWordPairId)
+        ? completedPracticeWordPairIds
+        : [...completedPracticeWordPairIds, matchedWordPairId];
       const practiceReplacement = selectNextUniquePracticeWordPair(
         difficultWordPairs,
         remainingGameBoard,
         nextPracticePairIndex,
+        nextCompletedWordPairIds,
       );
 
-      setCompletedPracticeWordPairIds((currentCompletedWordPairIds) => {
-        if (currentCompletedWordPairIds.includes(matchedWordPairId)) {
-          return currentCompletedWordPairIds;
-        }
-
-        return [...currentCompletedWordPairIds, matchedWordPairId];
-      });
+      setCompletedPracticeWordPairIds(nextCompletedWordPairIds);
 
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
@@ -622,7 +664,13 @@ export function useMatchingGame(
         );
       }
     },
-    [difficultWordPairs, gameBoard, nextPracticePairIndex, session?.matchMode],
+    [
+      completedPracticeWordPairIds,
+      difficultWordPairs,
+      gameBoard,
+      nextPracticePairIndex,
+      session?.matchMode,
+    ],
   );
 
   const evaluateCompletedSelection = useCallback(
@@ -1021,7 +1069,11 @@ export function useMatchingGame(
     }
 
     const missedWordPairIds = new Set(primaryGameResult.missedWordPairIds);
-    const focusedWordPairs = session.pairs.filter((wordPair) => missedWordPairIds.has(wordPair.id));
+    const focusedWordPairs = createFocusedReviewWordPairs(
+      session.pairs,
+      missedWordPairIds,
+      PRACTICE_BOARD_SIZE,
+    );
     const initialPracticeBoard = createInitialGameBoard(
       focusedWordPairs,
       PRACTICE_BOARD_SIZE,
@@ -1054,6 +1106,7 @@ export function useMatchingGame(
     reinforcementFeedback,
     selectedReinforcementAnswerId,
     isLearnedWordCelebrationVisible,
+    isReinforcementSkipDisabled,
     gameBoard,
     translationBoardPairs,
     completedWordBoardPairIds,
@@ -1083,8 +1136,10 @@ export function useMatchingGame(
     focusedReviewWordStatistics,
     focusedReviewState,
     gameResult,
+    completeGetReady,
     acknowledgePreparationWord,
     skipPreparation,
+    skipCurrentReinforcementWord,
     selectReinforcementAnswer,
     selectWordCard,
     selectTranslationCard,

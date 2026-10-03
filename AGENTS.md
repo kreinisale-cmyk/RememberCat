@@ -22,6 +22,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 - Keep pure transformations, validation, sorting, formatting, and selection logic in `utils.ts`.
 - Do not define pure validation or transformation helpers inside a screen or component; place them in the owning feature's `utils.ts` instead.
 - Move substantial asynchronous workflows, device APIs, and multi-step state orchestration into named hooks under the owning feature's `hooks/` folder. Screens should call those hooks rather than contain the workflow inline.
+- Hooks must return their mode or phase enums. Screens must derive phase-based rendering and interaction conditions locally instead of receiving derived phase checks from hooks.
 - Use React Context and named hooks for shared cross-route state. Never use module-level mutable variables or getter/setter functions as application state.
 - Co-locate each shared-state hook, its context, and its provider under `src/features/<Domain>/use<Domain>/`, with dedicated `context/` and `provider/` folders.
 - Keep public props, state shapes, and domain types in `types.ts`.

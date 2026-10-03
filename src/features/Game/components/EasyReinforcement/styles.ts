@@ -25,6 +25,23 @@ export const styles = StyleSheet.create({
     fontFamily: RememberCatFonts.bodyExtraBold,
     fontSize: 12,
   },
+  skipButton: {
+    minHeight: 34,
+    justifyContent: 'center',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: RememberCatColors.primaryBorder,
+    backgroundColor: RememberCatColors.card,
+    paddingHorizontal: 10,
+  },
+  skipButtonDisabled: { opacity: 0.45 },
+  skipButtonPressed: { opacity: 0.72, transform: [{ scale: 0.96 }] },
+  skipButtonText: {
+    color: RememberCatColors.primary,
+    fontFamily: RememberCatFonts.bodyExtraBold,
+    fontSize: 11,
+    lineHeight: 15,
+  },
   heading: { marginTop: 18, marginBottom: 20 },
   kicker: {
     color: RememberCatColors.primary,

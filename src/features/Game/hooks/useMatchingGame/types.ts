@@ -29,6 +29,7 @@ export type UseMatchingGameResult = {
   reinforcementFeedback: ReinforcementFeedback;
   selectedReinforcementAnswerId: string | null;
   isLearnedWordCelebrationVisible: boolean;
+  isReinforcementSkipDisabled: boolean;
   gameBoard: GameBoardPair[];
   translationBoardPairs: GameBoardPair[];
   completedWordBoardPairIds: string[];
@@ -58,8 +59,10 @@ export type UseMatchingGameResult = {
   focusedReviewWordStatistics: CompletedWordStatistic[];
   focusedReviewState: FocusedReviewState;
   gameResult: CompletedGameResult | null;
+  completeGetReady: () => void;
   acknowledgePreparationWord: () => void;
   skipPreparation: () => void;
+  skipCurrentReinforcementWord: () => void;
   selectReinforcementAnswer: (wordPairId: string) => void;
   selectWordCard: (boardPairId: string) => void;
   selectTranslationCard: (boardPairId: string) => void;

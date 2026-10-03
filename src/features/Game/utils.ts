@@ -338,21 +338,28 @@ export function selectNextUniquePracticeWordPair(
   difficultWordPairs: WordPair[],
   remainingGameBoard: GameBoardPair[],
   nextPracticePairIndex: number,
+  completedWordPairIds: string[],
 ) {
-  if (difficultWordPairs.length === 0) {
+  if (difficultWordPairs.length === 0 || nextPracticePairIndex >= difficultWordPairs.length) {
     return null;
   }
 
+  const completedWordPairIdSet = new Set(completedWordPairIds);
   const visibleWordPairIds = new Set(
     remainingGameBoard.map((gameBoardPair) => gameBoardPair.wordPairId),
   );
 
-  for (let candidateOffset = 0; candidateOffset < difficultWordPairs.length; candidateOffset += 1) {
-    const candidateSequenceIndex = nextPracticePairIndex + candidateOffset;
-    const candidateWordPair =
-      difficultWordPairs[candidateSequenceIndex % difficultWordPairs.length];
+  for (
+    let candidateSequenceIndex = nextPracticePairIndex;
+    candidateSequenceIndex < difficultWordPairs.length;
+    candidateSequenceIndex += 1
+  ) {
+    const candidateWordPair = difficultWordPairs[candidateSequenceIndex];
 
-    if (!visibleWordPairIds.has(candidateWordPair.id)) {
+    if (
+      !completedWordPairIdSet.has(candidateWordPair.id) &&
+      !visibleWordPairIds.has(candidateWordPair.id)
+    ) {
       return {
         wordPair: candidateWordPair,
         sequenceIndex: candidateSequenceIndex,
@@ -714,6 +721,30 @@ export function selectDifficultWordPairs(
   );
 
   return [...selectedFailedWordPairs, ...randomlySelectedWordPairs];
+}
+
+export function createFocusedReviewWordPairs(
+  wordPairs: WordPair[],
+  missedWordPairIds: Set<string>,
+  minimumWordPairCount: number,
+  generateRandomNumber: RandomNumberGenerator = Math.random,
+) {
+  const missedWordPairs = wordPairs.filter((wordPair) => missedWordPairIds.has(wordPair.id));
+
+  if (missedWordPairs.length === 0 || missedWordPairs.length >= minimumWordPairCount) {
+    return missedWordPairs;
+  }
+
+  const additionalWordPairCount = Math.min(
+    minimumWordPairCount - missedWordPairs.length,
+    wordPairs.length - missedWordPairs.length,
+  );
+  const additionalWordPairs = shuffle(
+    wordPairs.filter((wordPair) => !missedWordPairIds.has(wordPair.id)),
+    generateRandomNumber,
+  ).slice(0, additionalWordPairCount);
+
+  return [...missedWordPairs, ...additionalWordPairs];
 }
 
 export function createShuffledFinalQuizWordPairs(

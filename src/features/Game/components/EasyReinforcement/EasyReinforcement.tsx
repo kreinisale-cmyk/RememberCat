@@ -8,6 +8,7 @@ import {
   REINFORCEMENT_CLOSE_ACCESSIBILITY_LABEL,
   REINFORCEMENT_HINT,
   REINFORCEMENT_KICKER,
+  REINFORCEMENT_SKIP_LABEL,
   REINFORCEMENT_TITLE,
   REPETITION_LABEL,
 } from './constants';
@@ -29,8 +30,10 @@ export function EasyReinforcement({
   feedback,
   selectedAnswerId,
   isCelebrating,
+  isSkipDisabled,
   onClose,
   onSelectAnswer,
+  onSkip,
 }: EasyReinforcementProps) {
   const progress = getReinforcementProgress(
     currentWordNumber,
@@ -39,6 +42,7 @@ export function EasyReinforcement({
     repetitionGoal,
   );
   const isSelectionDisabled = feedback !== ReinforcementFeedback.None || isCelebrating;
+  const isSkipButtonDisabled = isSelectionDisabled || isSkipDisabled;
 
   return (
     <View style={styles.content}>
@@ -57,6 +61,21 @@ export function EasyReinforcement({
         <ThemedText style={styles.progressLabel}>
           {createReinforcementWordProgressLabel(currentWordNumber, totalWordCount)}
         </ThemedText>
+        <Pressable
+          android_disableSound
+          accessibilityRole="button"
+          accessibilityLabel={REINFORCEMENT_SKIP_LABEL}
+          accessibilityState={{ disabled: isSkipButtonDisabled }}
+          disabled={isSkipButtonDisabled}
+          onPress={onSkip}
+          style={({ pressed }) => [
+            styles.skipButton,
+            isSkipButtonDisabled && styles.skipButtonDisabled,
+            pressed && !isSkipButtonDisabled && styles.skipButtonPressed,
+          ]}
+        >
+          <ThemedText style={styles.skipButtonText}>{REINFORCEMENT_SKIP_LABEL}</ThemedText>
+        </Pressable>
       </View>
       <View accessibilityRole="header" style={styles.heading}>
         <ThemedText style={styles.kicker}>{REINFORCEMENT_KICKER}</ThemedText>
@@ -88,6 +107,7 @@ export function EasyReinforcement({
             return (
               <Pressable
                 key={answerChoice.wordPairId}
+                android_disableSound
                 accessibilityRole="button"
                 accessibilityState={{
                   disabled: isSelectionDisabled,

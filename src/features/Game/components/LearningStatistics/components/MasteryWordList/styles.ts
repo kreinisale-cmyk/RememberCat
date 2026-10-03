@@ -59,4 +59,19 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     textTransform: 'capitalize',
   },
+  expandButton: {
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    borderTopColor: RememberCatColors.border,
+    borderTopWidth: 1,
+    paddingTop: 10,
+  },
+  expandButtonPressed: { opacity: 0.68 },
+  expandButtonText: {
+    color: RememberCatColors.primary,
+    fontFamily: RememberCatFonts.bodyExtraBold,
+    fontSize: 13,
+  },
 });

@@ -1,17 +1,28 @@
 import { FinalQuizFeedback, GameStage, MatchFeedback, ReinforcementFeedback } from '../../types';
 import { GameOutcomeFeedback, UseGameFeedbackOptions } from './types';
 
-export function selectRandomIndex(itemCount: number) {
-  return Math.floor(Math.random() * itemCount);
+export function createShuffledSoundBag(
+  itemCount: number,
+  previousIndex: number | null,
+  random: () => number = Math.random,
+) {
+  const indices = Array.from({ length: itemCount }, (_, index) => index);
+
+  for (let index = indices.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    [indices[index], indices[swapIndex]] = [indices[swapIndex], indices[index]];
+  }
+
+  if (indices.length > 1 && indices[0] === previousIndex) {
+    const swapIndex = 1 + Math.floor(random() * (indices.length - 1));
+    [indices[0], indices[swapIndex]] = [indices[swapIndex], indices[0]];
+  }
+
+  return indices;
 }
 
-export function didMatchingOutcomeChange(
-  current: UseGameFeedbackOptions,
-  previous: UseGameFeedbackOptions,
-) {
-  return (
-    current.matchFeedback !== previous.matchFeedback && current.matchFeedback !== MatchFeedback.None
-  );
+export function isAnswerOutcome(outcome: GameOutcomeFeedback) {
+  return outcome === GameOutcomeFeedback.Correct || outcome === GameOutcomeFeedback.Incorrect;
 }
 
 export function selectGameOutcomeFeedback(

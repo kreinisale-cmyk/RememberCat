@@ -3,7 +3,7 @@ import { Switch, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import { RememberCatColors } from '@/constants/theme';
 
-import { CAT_REACTIONS_COPY, GAME_CUES_COPY, HAPTICS_COPY } from './constants';
+import { ANSWER_SOUNDS_COPY, GAME_CUES_COPY, HAPTICS_COPY } from './constants';
 import { styles } from './styles';
 import { GameFeedbackSettingsProps } from './types';
 
@@ -21,12 +21,12 @@ export function GameFeedbackSettings({
     <View style={styles.container}>
       <View style={styles.row}>
         <View style={styles.copy}>
-          <ThemedText style={styles.label}>{CAT_REACTIONS_COPY.label}</ThemedText>
-          <ThemedText style={styles.hint}>{CAT_REACTIONS_COPY.hint}</ThemedText>
+          <ThemedText style={styles.label}>{ANSWER_SOUNDS_COPY.label}</ThemedText>
+          <ThemedText style={styles.hint}>{ANSWER_SOUNDS_COPY.hint}</ThemedText>
         </View>
         <Switch
-          accessibilityHint={CAT_REACTIONS_COPY.hint}
-          accessibilityLabel={CAT_REACTIONS_COPY.label}
+          accessibilityHint={ANSWER_SOUNDS_COPY.hint}
+          accessibilityLabel={ANSWER_SOUNDS_COPY.label}
           accessibilityRole="switch"
           accessibilityState={{ checked: catReactionsEnabled, disabled: isDisabled }}
           disabled={isDisabled}

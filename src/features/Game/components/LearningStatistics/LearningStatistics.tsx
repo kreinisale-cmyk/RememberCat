@@ -36,28 +36,30 @@ export function LearningStatistics({
           {createLearningStatisticsDescription(result.missedWordPairIds.length)}
         </ThemedText>
       </View>
+      <View style={styles.actions}>
+        {focusedReviewState === FocusedReviewState.Available ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={onReviewMissedWords}
+            style={styles.reviewButton}
+          >
+            <ThemedText style={styles.reviewButtonText}>
+              {REVIEW_MISSED_WORDS_BUTTON_LABEL}
+            </ThemedText>
+          </Pressable>
+        ) : null}
+        {focusedReviewState === FocusedReviewState.Complete ? (
+          <View accessible style={styles.reviewComplete}>
+            <ThemedText style={styles.reviewCompleteText}>{REVIEW_COMPLETE_LABEL}</ThemedText>
+          </View>
+        ) : null}
+        <Pressable accessibilityRole="button" onPress={onReturnToSetup} style={styles.returnButton}>
+          <ThemedText style={styles.returnButtonText}>{RETURN_TO_SETUP_BUTTON_LABEL}</ThemedText>
+        </Pressable>
+      </View>
       <ResultSummary result={result} />
       <MistakeAnalyticsChart learningStatistics={result.learningStatistics} />
       <MasteryWordList wordResults={result.wordResults} />
-      {focusedReviewState === FocusedReviewState.Available ? (
-        <Pressable
-          accessibilityRole="button"
-          onPress={onReviewMissedWords}
-          style={styles.reviewButton}
-        >
-          <ThemedText style={styles.reviewButtonText}>
-            {REVIEW_MISSED_WORDS_BUTTON_LABEL}
-          </ThemedText>
-        </Pressable>
-      ) : null}
-      {focusedReviewState === FocusedReviewState.Complete ? (
-        <View accessible style={styles.reviewComplete}>
-          <ThemedText style={styles.reviewCompleteText}>{REVIEW_COMPLETE_LABEL}</ThemedText>
-        </View>
-      ) : null}
-      <Pressable accessibilityRole="button" onPress={onReturnToSetup} style={styles.returnButton}>
-        <ThemedText style={styles.returnButtonText}>{RETURN_TO_SETUP_BUTTON_LABEL}</ThemedText>
-      </Pressable>
     </ScrollView>
   );
 }

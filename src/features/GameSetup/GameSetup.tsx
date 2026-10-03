@@ -1,42 +1,22 @@
 import { Href, router } from 'expo-router';
 import ArrowLeft from 'lucide-react-native/icons/arrow-left';
 import Cat from 'lucide-react-native/icons/cat';
-import Clock from 'lucide-react-native/icons/clock';
-import Layers from 'lucide-react-native/icons/layers';
-import Volume2 from 'lucide-react-native/icons/volume-2';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { RememberCatColors } from '@/constants/theme';
-import { useAppPreferences } from '@/features/AppPreferences/useAppPreferences/useAppPreferences';
 import { BuildYourDeckEntryMode, BuildYourDeckEntryOrigin } from '@/features/BuildYourDeck/types';
-import { DeckSize, FocusMode, MatchMode } from '@/features/GameSession/types';
+import { DeckSize, MatchMode } from '@/features/GameSession/types';
 import { useGameSession } from '@/features/GameSession/useGameSession/useGameSession';
 
-import { DeckSizeSelector } from './components/DeckSizeSelector/DeckSizeSelector';
-import { GameFeedbackSettings } from './components/GameFeedbackSettings/GameFeedbackSettings';
-import { ModeToggle } from './components/ModeToggle/ModeToggle';
-import { SettingsCard } from './components/SettingsCard/SettingsCard';
-import { SettingsCardIconTone } from './components/SettingsCard/types';
+import { GameSetupControlsCard } from './components/GameSetupControlsCard/GameSetupControlsCard';
 import { WordListSetupActions } from './components/WordListSetupActions/WordListSetupActions';
 import { GAME_SETUP_ROUTE, WORD_EDITOR_ROUTE, WORDS_ROUTE } from './constants';
 import { styles } from './styles';
-import {
-  findLatestSavedDeckForSize,
-  getFocusModeDescription,
-  getMatchModeDescription,
-} from './utils';
+import { findLatestSavedDeckForSize } from './utils';
 
 export function GameSetup() {
-  const {
-    preferences,
-    isPreferencesLoading,
-    preferencesError,
-    setCatReactionsEnabled,
-    setGameCuesEnabled,
-    setHapticsEnabled,
-  } = useAppPreferences();
   const {
     draft,
     savedDecks,
@@ -49,10 +29,6 @@ export function GameSetup() {
 
   function updateDeckSize(deckSize: DeckSize) {
     updateDraft({ deckSize, pairs: [], savedDeckId: null });
-  }
-
-  function updateFocusMode(focusMode: FocusMode) {
-    updateDraft({ focusMode });
   }
 
   function updateMatchMode(matchMode: MatchMode) {
@@ -115,55 +91,12 @@ export function GameSetup() {
           </ThemedText>
         </View>
         <View style={styles.cards}>
-          <SettingsCard
-            badge={`${draft.deckSize} words`}
-            title="Practice size"
-            detail={`${draft.deckSize} words in this practice deck`}
-          >
-            <DeckSizeSelector selectedDeckSize={draft.deckSize} onChange={updateDeckSize} />
-          </SettingsCard>
-          <SettingsCard
-            icon={Clock}
-            iconTone={SettingsCardIconTone.Secondary}
-            title="Focus mode"
-            detail={getFocusModeDescription(draft.focusMode)}
-          >
-            <ModeToggle
-              first={FocusMode.Timed}
-              second={FocusMode.Free}
-              selected={draft.focusMode}
-              onChange={updateFocusMode}
-            />
-          </SettingsCard>
-          <SettingsCard
-            icon={Volume2}
-            title="Game feedback"
-            detail="Choose your cat reactions, game sounds, and touch feedback."
-          >
-            <GameFeedbackSettings
-              catReactionsEnabled={preferences.catReactionsEnabled}
-              gameCuesEnabled={preferences.gameCuesEnabled}
-              hapticsEnabled={preferences.hapticsEnabled}
-              isDisabled={isPreferencesLoading}
-              errorMessage={preferencesError}
-              onCatReactionsEnabledChange={setCatReactionsEnabled}
-              onGameCuesEnabledChange={setGameCuesEnabled}
-              onHapticsEnabledChange={setHapticsEnabled}
-            />
-          </SettingsCard>
-          <SettingsCard
-            icon={Layers}
-            iconTone={SettingsCardIconTone.Accent}
-            title="Match mode"
-            detail={getMatchModeDescription(draft.matchMode)}
-          >
-            <ModeToggle
-              first={MatchMode.Easy}
-              second={MatchMode.Hard}
-              selected={draft.matchMode}
-              onChange={updateMatchMode}
-            />
-          </SettingsCard>
+          <GameSetupControlsCard
+            selectedDeckSize={draft.deckSize}
+            selectedMatchMode={draft.matchMode}
+            onDeckSizeChange={updateDeckSize}
+            onMatchModeChange={updateMatchMode}
+          />
           <WordListSetupActions
             deckSize={draft.deckSize}
             latestSavedDeck={latestSavedDeck}

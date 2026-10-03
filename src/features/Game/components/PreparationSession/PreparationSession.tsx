@@ -56,10 +56,14 @@ export function PreparationSession({
     rootRef,
     wordPairId: wordPair.id,
   });
-  const preparedWordCount = getPreparedWordCount(
-    currentWordNumber,
-    preparationAnimation.isCurrentWordLanded,
-  );
+  const isCurrentWordLanded = preparationAnimation.phase === PreparationAnimationPhase.Landed;
+  const isFlying = preparationAnimation.phase === PreparationAnimationPhase.Flying;
+  const isInteractionDisabled =
+    preparationAnimation.phase !== PreparationAnimationPhase.Idle ||
+    !preparationAnimation.landingLayouts;
+  const isOverlayVisible = preparationAnimation.phase !== PreparationAnimationPhase.Landed;
+  const isSourceVisible = preparationAnimation.phase === PreparationAnimationPhase.Idle;
+  const preparedWordCount = getPreparedWordCount(currentWordNumber, isCurrentWordLanded);
 
   function closePreparation() {
     preparationAnimation.cancelAnimation();
@@ -124,10 +128,12 @@ export function PreparationSession({
         />
       </View>
 
-      {preparationAnimation.isOverlayVisible ? (
+      {isOverlayVisible ? (
         <View style={styles.overlay}>
-          {preparationAnimation.isSourceVisible ? (
+          {isSourceVisible ? (
             <Animated.View
+              needsOffscreenAlphaCompositing={preparationAnimation.isSourceEntranceAnimating}
+              renderToHardwareTextureAndroid={preparationAnimation.isSourceEntranceAnimating}
               style={[
                 styles.sourceCardWrapper,
                 { opacity: preparationAnimation.sourceCardOpacity },
@@ -135,7 +141,7 @@ export function PreparationSession({
             >
               <PreparationWordCard
                 ref={cardRef}
-                isDisabled={preparationAnimation.isInteractionDisabled}
+                isDisabled={isInteractionDisabled}
                 isFinalWord={isFinalWord}
                 onAcknowledge={acknowledgeWord}
                 wordPair={wordPair}
@@ -145,8 +151,7 @@ export function PreparationSession({
         </View>
       ) : null}
 
-      {preparationAnimation.phase === PreparationAnimationPhase.Flying &&
-      preparationAnimation.landingLayouts ? (
+      {isFlying && preparationAnimation.landingLayouts ? (
         <View pointerEvents="none" style={styles.flyingLayer}>
           <FlyingPreparationCard
             layouts={preparationAnimation.landingLayouts}

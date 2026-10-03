@@ -49,6 +49,15 @@ export function AppTabs() {
           ),
         }}
       />
+      <Tabs.Screen
+        name={AppTab.Settings}
+        options={{
+          title: APP_TAB_COPY.settings,
+          tabBarIcon: ({ color, focused }) => (
+            <AppTabIcon color={color} focused={focused} icon={APP_TAB_ICONS.settings} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

@@ -41,6 +41,7 @@ import {
   WordPairField,
 } from './types';
 import {
+  analyzeBulkWordPairPaste,
   createWordPair,
   filterSavedDecksByDeckSize,
   findCandidateWordPairConflict,
@@ -83,6 +84,7 @@ export function BuildYourDeck() {
   const [importMessage, setImportMessage] = useState('');
   const [isBulkModalVisible, setIsBulkModalVisible] = useState(false);
   const [bulkWords, setBulkWords] = useState('');
+  const [recentlyAddedBulkPairCount, setRecentlyAddedBulkPairCount] = useState(0);
   const [deckName, setDeckName] = useState('');
   const [wordPairModalError, setWordPairModalError] = useState<string | null>(null);
 
@@ -111,6 +113,10 @@ export function BuildYourDeck() {
     wordPairConflicts.length === 0 &&
     hasValidDeckName;
   const canSavePair = Boolean(word.trim() && translation.trim() && !hasCandidateConflict);
+  const bulkPasteAnalysis = useMemo(
+    () => analyzeBulkWordPairPaste(bulkWords, pairs, wordPairLimit),
+    [bulkWords, pairs, wordPairLimit],
+  );
   const isLibraryView = viewMode === BuildYourDeckViewMode.Library;
   const importWordPairs = useImportWordPairs({
     pairs,
@@ -120,7 +126,6 @@ export function BuildYourDeck() {
   });
   const addBulkWordPairs = useBulkAddWordPairs({
     pairs,
-    wordPairLimit,
     setDraftPairs,
     setImportMessage,
   });
@@ -236,10 +241,30 @@ export function BuildYourDeck() {
   }
 
   function saveBulkWords() {
-    if (!addBulkWordPairs(bulkWords)) return;
+    const result = addBulkWordPairs(bulkPasteAnalysis);
+
+    if (!result.addedPairCount) return;
+
+    setRecentlyAddedBulkPairCount(result.addedPairCount);
+
+    if (result.remainingContents) {
+      setBulkWords(result.remainingContents);
+
+      return;
+    }
 
     setBulkWords('');
     setIsBulkModalVisible(false);
+  }
+
+  function changeBulkWords(value: string) {
+    setBulkWords(value);
+    setRecentlyAddedBulkPairCount(0);
+  }
+
+  function openBulkWordPairModal() {
+    setRecentlyAddedBulkPairCount(0);
+    setIsBulkModalVisible(true);
   }
 
   async function startGame() {
@@ -365,7 +390,7 @@ export function BuildYourDeck() {
               importMessage={importMessage}
               onAdd={() => setIsModalVisible(true)}
               onImport={importWordPairs}
-              onPaste={() => setIsBulkModalVisible(true)}
+              onPaste={openBulkWordPairModal}
               onStart={startGame}
             />
           </>
@@ -390,8 +415,10 @@ export function BuildYourDeck() {
         <BulkWordPairModal
           visible={isBulkModalVisible}
           contents={bulkWords}
+          analysis={bulkPasteAnalysis}
+          recentlyAddedPairCount={recentlyAddedBulkPairCount}
           wordPairLimit={wordPairLimit}
-          onChange={setBulkWords}
+          onChange={changeBulkWords}
           onClose={() => setIsBulkModalVisible(false)}
           onSave={saveBulkWords}
         />

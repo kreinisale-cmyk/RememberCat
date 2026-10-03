@@ -8,6 +8,7 @@ import { ChallengeFailed } from './components/ChallengeFailed/ChallengeFailed';
 import { EasyReinforcement } from './components/EasyReinforcement/EasyReinforcement';
 import { FinalQuiz } from './components/FinalQuiz/FinalQuiz';
 import { FinalQuizTransition } from './components/FinalQuizTransition/FinalQuizTransition';
+import { GetReady } from './components/GetReady/GetReady';
 import { LearningStatistics } from './components/LearningStatistics/LearningStatistics';
 import { MatchingBoard } from './components/MatchingBoard/MatchingBoard';
 import { PracticeTransition } from './components/PracticeTransition/PracticeTransition';
@@ -66,6 +67,10 @@ export function Game() {
     router.replace(GAME_SETUP_ROUTE);
   }
 
+  if (matchingGame.gameStage === GameStage.GetReady) {
+    return <GetReady onComplete={matchingGame.completeGetReady} />;
+  }
+
   if (matchingGame.gameStage === GameStage.PracticeTransition) {
     return <PracticeTransition onContinue={matchingGame.startDifficultWordsPractice} />;
   }
@@ -122,8 +127,10 @@ export function Game() {
             feedback={matchingGame.reinforcementFeedback}
             selectedAnswerId={matchingGame.selectedReinforcementAnswerId}
             isCelebrating={matchingGame.isLearnedWordCelebrationVisible}
+            isSkipDisabled={matchingGame.isReinforcementSkipDisabled}
             onClose={leaveGame}
             onSelectAnswer={matchingGame.selectReinforcementAnswer}
+            onSkip={matchingGame.skipCurrentReinforcementWord}
           />
         );
       } else {
